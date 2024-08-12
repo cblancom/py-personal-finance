@@ -1,7 +1,17 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, MetaData
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Float,
+    Date,
+    MetaData,
+    ForeignKey,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 
 
 class CreateDB:
@@ -26,18 +36,19 @@ class CreateDB:
             amount = Column(Float, nullable=False)
             date = Column(Date, nullable=False)
 
+        class Category(self.Base):
+            __tablename__ = "category"
+            id = Column(Integer, primary_key=True)
+            name = Column(String, nullable=False)
+            expenses = relationship("Expense", back_populates="category")
+
         class Expense(self.Base):
             __tablename__ = "expense"
             id = Column(Integer, primary_key=True)
             amount = Column(Float, nullable=False)
+            category_id = Column(Integer, ForeignKey("category.id"), nullable=False)
             date = Column(Date, nullable=False)
-            category = Column(String, nullable=False)
-
-        class Category(self.Base):
-            __tablename__ = "category"
-            id = Column(Integer, primary_key=True)
-            amount = Column(Float, nullable=False)
-            date = Column(Date, nullable=False)
+            category = relationship("Category", back_populates="expenses")
 
         self.Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
