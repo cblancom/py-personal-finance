@@ -1,7 +1,7 @@
-from database import Create_db
+from models import CreateDB
 
 if __name__ == "__main__":
-    db = Create_db()
+    db = CreateDB()
     print("Tables:")
     for table in db.table:
         print(table)
