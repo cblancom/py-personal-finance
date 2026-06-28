@@ -1,18 +1,13 @@
 import os
 from dotenv import load_dotenv
 from datetime import date
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    mapped_column,
-    sessionmaker,
-)
-from sqlalchemy import create_engine, String, Integer, Date, ForeignKey
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
+from sqlalchemy import create_engine, String, Integer, Date, ForeignKey, select
 from enum import Enum
 from sqlalchemy import Enum as SQLEnum
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Annotated
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 
 
 load_dotenv()
@@ -162,10 +157,18 @@ app = FastAPI()
 
 
 @app.post("/ingresos", response_model=IngresoRead)
-def add_ingreso(ingreso: IngresoWrite):
-    return ingreso
+def add_ingreso(ingreso: IngresoWrite, db: Session = Depends(get_db)):
+    ingreso_nuevo = IngresoTabla(**ingreso.model_dump())
+    db.add(ingreso_nuevo)
+    db.commit()
+    db.refresh(ingreso_nuevo)
+    return ingreso_nuevo
 
 
 @app.get("/ingresos/{ingreso_id}", response_model=IngresoRead)
-def get_ingreso(ingreso_id: int):
-    pass
+def get_ingreso(ingreso_id: int, db: Session = Depends(get_db)):
+    query = select(IngresoTabla).where(IngresoTabla.id == ingreso_id)
+    ingreso = db.execute(query).scalar_one_or_none()
+    if ingreso is None:
+        raise HTTPException(status_code=404, detail="Ingreso no encontrado")
+    return ingreso
