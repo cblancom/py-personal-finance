@@ -2,11 +2,11 @@ import os
 from dotenv import load_dotenv
 from datetime import date
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
-from sqlalchemy import create_engine, String, Integer, Date, ForeignKey, select
+from sqlalchemy import create_engine, String, Integer, Date, ForeignKey, select, delete
 from enum import Enum
 from sqlalchemy import Enum as SQLEnum
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Annotated
+from typing import Annotated, List
 from fastapi import FastAPI, Depends, HTTPException
 
 
@@ -171,4 +171,23 @@ def get_ingreso(ingreso_id: int, db: Session = Depends(get_db)):
     ingreso = db.execute(query).scalar_one_or_none()
     if ingreso is None:
         raise HTTPException(status_code=404, detail="Ingreso no encontrado")
+    return ingreso
+
+
+@app.get("/ingresos/", response_model=List[IngresoRead])
+def get_ingreso_all(db: Session = Depends(get_db)):
+    ingresos = db.scalars(select(IngresoTabla)).all()
+    return ingresos
+
+
+@app.delete("/ingresos/{ingreso_id}", response_model=IngresoRead)
+def delete_ingreso(ingreso_id: int, db: Session = Depends(get_db)):
+    query = select(IngresoTabla).where(IngresoTabla.id == ingreso_id)
+    ingreso = db.execute(query).scalar_one_or_none()
+    if ingreso is None:
+        raise HTTPException(status_code=404, detail="Ingreso no encontrado")
+    else:
+        query = delete(IngresoTabla).where(IngresoTabla.id == ingreso_id)
+        db.execute(query)
+        db.commit()
     return ingreso
