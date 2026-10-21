@@ -20,7 +20,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | Orden | Especificación | Fase | Alcance | Depende de | Estado |
 |---|---|---|---|---|---|
 | 001 | [`001-fundaciones`](001-fundaciones/spec.md) ([plan](001-fundaciones/plan.md), [tareas](001-fundaciones/tasks.md)) | 0 | Estructura, salud, SQLAlchemy, Alembic, compose de desarrollo y arneses de prueba | Constitución y AGENTS | Validada (T-001 a T-012 completadas) |
-| 002 | `002-api-ingresos` | 1 | Modelo, migración y CRUD completo de ingresos | 001 | Pendiente |
+| 002 | [`002-api-ingresos`](002-api-ingresos/spec.md) ([plan](002-api-ingresos/plan.md), [tareas](002-api-ingresos/tasks.md)) | 1 | Modelo, migración y CRUD completo de ingresos | 001 | En implementación (T-001 a T-003 completadas) |
 | 003 | `003-api-gastos` | 1 | Modelo, migración y CRUD completo de gastos con tipo | 001 | Pendiente |
 | 004 | `004-api-resumen` | 2 | Totales de ingresos y gastos, balance y desglose por tipo | 002, 003 | Pendiente |
 | 005 | `005-interfaz-mvp` | 3 | Formularios, listados, edición, eliminación, totales y estados de UI | 002, 003, 004 | Pendiente |
