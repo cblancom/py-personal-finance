@@ -12,12 +12,13 @@ def test_client_uses_test_database(client: TestClient):
     assert response.json() == {"status": "ok", "database": "ok"}
 
 
-def test_income_table_and_migration_are_ready(test_engine: Engine):
+def test_tables_and_migration_are_ready(test_engine: Engine):
     table_names = inspect(test_engine).get_table_names()
 
     assert "ingresos" in table_names
+    assert "gastos" in table_names
 
     with test_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
 
-    assert version == "0002"
+    assert version == "0003"
