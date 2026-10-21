@@ -57,11 +57,12 @@ T-001 ──► T-002 ──► T-004 ─────────────┐
     uv run ruff check .
     ```
 
-- [ ] **T-004 — Crear la base de test y el fixture de integración**
+- [x] **T-004 — Crear la base de test y el fixture de integración**
   - Requisitos: NFR-004, NFR-007, BR-009.
   - Dependencias: T-002.
   - Descripción: añadir el marcador `integration`; crear `tests/integration/conftest.py` y `__init__.py`. El fixture debe leer `TEST_DATABASE_URL`, omitir si falta, impedir que coincida con `DATABASE_URL`, crear `personal_finance_test` si no existe, ejecutar migraciones Alembic contra esa base, truncar `ingresos` entre pruebas y sobrescribir `get_db`.
   - Hecho cuando: una prueba de humo contra la base de test pasa; sin `TEST_DATABASE_URL` las pruebas de integración se omiten con un mensaje claro; la base de desarrollo no se modifica.
+  - Evidencia (2026-10-21): marcador `integration` registrado; fixture crea `personal_finance_test`, ejecuta migraciones y trunca `ingresos`; pruebas de humo verifican tabla/versión `0002` y el cliente contra la base de test. Sin `TEST_DATABASE_URL`: 30 pruebas pasan y 2 se omiten con mensaje claro. Con la URL de test: 32 pruebas pasan. La base de desarrollo no se modifica. Ruff y formato pasan (28 archivos).
   - Verificación:
     ```bash
     cd backend
@@ -70,22 +71,24 @@ T-001 ──► T-002 ──► T-004 ─────────────┐
       uv run pytest tests/integration -q
     ```
 
-- [ ] **T-005 — Implementar `POST`, `GET` lista y `GET` por id**
+- [x] **T-005 — Implementar `POST`, `GET` lista y `GET` por id**
   - Requisitos: FR-003, FR-004, FR-005, FR-011, FR-012, FR-013, NFR-003, NFR-006.
   - Dependencias: T-002, T-003.
   - Descripción: crear `app/api/routes/incomes.py` con el router `/ingresos`, el mapeo `to_income_read`, los endpoints de creación, listado y consulta, y registrarlo en `app/main.py` bajo `/api`.
   - Hecho cuando: crear devuelve `201`; listar devuelve `200` con orden `fecha DESC, id DESC`; consultar devuelve `200` o `404`; el endpoint aparece en OpenAPI y las pruebas pasan.
+  - Evidencia (2026-10-21): `POST /api/ingresos` devuelve `201`; `GET /api/ingresos` devuelve lista ordenada; `GET /api/ingresos/{id}` devuelve `200` o `404`. OpenAPI documenta ambas rutas. 5 pruebas de integración nuevas y 1 prueba de OpenAPI; con `TEST_DATABASE_URL`: 38 pruebas pasan; sin ella: 31 pasan y 7 se omiten. En Docker, `GET /api/ingresos` responde `200 []` y un id inexistente `404`. Ruff y formato pasan (31 archivos).
   - Verificación:
     ```bash
     docker compose exec api env TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/personal_finance_test uv run pytest
     docker compose exec api uv run ruff check .
     ```
 
-- [ ] **T-006 — Implementar `PUT` y `DELETE`**
+- [x] **T-006 — Implementar `PUT` y `DELETE`**
   - Requisitos: FR-006, FR-007, FR-011, FR-012, FR-013.
   - Dependencias: T-005.
   - Descripción: añadir edición completa con `PUT` y eliminación con `DELETE`, reutilizando el helper de búsqueda y el mapeo de respuesta.
   - Hecho cuando: `PUT` actualiza los tres campos y devuelve `200`; `DELETE` devuelve `204`; ambos devuelven `404` para ids inexistentes; `PUT` inválido devuelve `422`; las pruebas pasan.
+  - Evidencia (2026-10-21): `PUT` actualiza fecha, descripción y valor, persiste y devuelve `200`; `DELETE` devuelve `204` sin cuerpo; ambos devuelven `404`; `PUT` inválido devuelve `422`. Se añadieron 5 pruebas de integración y OpenAPI documenta `put`/`delete`. Con `TEST_DATABASE_URL`: 43 pruebas pasan; sin ella: 31 pasan y 12 se omiten. Ciclo manual en Docker: POST `201` → PUT `200` → DELETE `204` → GET `404`. Ruff y formato pasan (31 archivos).
   - Verificación:
     ```bash
     docker compose exec api env TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/personal_finance_test uv run pytest

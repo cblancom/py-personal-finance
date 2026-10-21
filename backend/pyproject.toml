@@ -32,3 +32,6 @@ known-third-party = ["alembic"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: requires a PostgreSQL test database",
+]
