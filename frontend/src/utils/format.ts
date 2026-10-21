@@ -1,0 +1,38 @@
+import type { ExpenseType } from '../types/expense'
+
+const moneyFormatter = new Intl.NumberFormat('es-CO', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const expenseTypeLabels: Record<ExpenseType, string> = {
+  NECESARIO: 'Necesario',
+  NO_NECESARIO: 'No necesario',
+  INVERSION: 'Inversión',
+}
+
+export function formatMoney(value: string): string {
+  if (value.trim() === '') {
+    return value
+  }
+
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) {
+    return value
+  }
+
+  return moneyFormatter.format(amount)
+}
+
+export function formatDate(value: string): string {
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) {
+    return value
+  }
+
+  return `${day}/${month}/${year}`
+}
+
+export function expenseTypeLabel(type: ExpenseType): string {
+  return expenseTypeLabels[type]
+}
