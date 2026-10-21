@@ -95,11 +95,12 @@ T-001 ──► T-002 ──► T-004 ─────────────┐
     docker compose exec api uv run ruff check .
     ```
 
-- [ ] **T-007 — Completar pruebas de integración y restricciones**
+- [x] **T-007 — Completar pruebas de integración y restricciones**
   - Requisitos: FR-008, FR-009, FR-010, NFR-002, NFR-004.
   - Dependencias: T-004, T-005, T-006.
   - Descripción: cubrir lista vacía, orden, descripción recortada, ida y vuelta de importes, `422` por valor/descripción/fecha, `404` en todos los endpoints y violaciones directas de checks en PostgreSQL. Validar `downgrade 0001`/`upgrade head` sobre la base de test.
   - Hecho cuando: la suite de integración completa pasa; las restricciones de base de datos se comprueban; la migración es reversible; sin `TEST_DATABASE_URL` las pruebas de integración se omiten.
+  - Evidencia (2026-10-21): se cubren lista vacía, orden, descripción recortada, importes `1500.5` → `1500.50` y `9999999999.99`, `422` por importe/descripción/fecha/campos ausentes, `404` en GET/PUT/DELETE y violaciones directas de `valor > 0` y descripción no vacía con `IntegrityError`. Con `TEST_DATABASE_URL`: 62 pruebas pasan; sin ella: 31 pasan y 31 se omiten. `downgrade 0001` + `upgrade head` sobre la base de test deja `0002 (head)` y la suite vuelve a pasar. Ruff y formato pasan (31 archivos).
   - Verificación:
     ```bash
     docker compose exec api env TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/personal_finance_test uv run pytest
@@ -107,11 +108,12 @@ T-001 ──► T-002 ──► T-004 ─────────────┐
     docker compose exec api env DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/personal_finance_test uv run alembic upgrade head
     ```
 
-- [ ] **T-008 — Documentar, actualizar infraestructura y validar**
+- [x] **T-008 — Documentar, actualizar infraestructura y validar**
   - Requisitos: NFR-004, NFR-008, AC-011 a AC-014.
   - Dependencias: T-007.
   - Descripción: añadir `TEST_DATABASE_URL` a `.env.example` y al servicio `api` de `compose.yaml`; actualizar README, AGENTS y `specs/README.md`; ejecutar la validación completa, incluyendo regresión de salud, frontend y Docker.
   - Hecho cuando: la suite completa pasa en Docker; la suite unitaria pasa sin base de datos; el frontend sigue pasando; `docker compose up --build` deja todo saludable; la documentación refleja el contrato y el estado real.
+  - Evidencia (2026-10-21): `TEST_DATABASE_URL` añadida a `.env.example` y al servicio `api`; README, AGENTS e índice actualizados. `docker compose config -q` OK; `up --build -d` deja `db`, `api` y `web` healthy; `/api/health` responde `200`; `GET /api/ingresos` responde `200 []`; `docker compose exec api uv run pytest` → 62 passed; suite unitaria local sin URL → 31 passed, 31 skipped; frontend → 7 passed, lint/typecheck/build OK; ruff/formato OK (31 archivos); `alembic current` → `0002 (head)`; sin secretos en logs.
   - Verificación:
     ```bash
     docker compose config -q
@@ -158,24 +160,24 @@ T-001 ──► T-002 ──► T-004 ─────────────┐
 
 ## Evidencia de validación
 
-Se completa durante T-008.
+Completada durante T-008.
 
 | Criterio | Resultado | Evidencia |
 |---|---|---|
-| AC-001 | Pendiente | |
-| AC-002 | Pendiente | |
-| AC-003 | Pendiente | |
-| AC-004 | Pendiente | |
-| AC-005 | Pendiente | |
-| AC-006 | Pendiente | |
-| AC-007 | Pendiente | |
-| AC-008 | Pendiente | |
-| AC-009 | Pendiente | |
-| AC-010 | Pendiente | |
-| AC-011 | Pendiente | |
-| AC-012 | Pendiente | |
-| AC-013 | Pendiente | |
-| AC-014 | Pendiente | |
+| AC-001 | Cumplido | Tabla `ingresos` creada por la migración `0002` con columnas, checks e índice. |
+| AC-002 | Cumplido | `downgrade 0001` + `upgrade head` sobre `personal_finance_test`; `alembic current` = `0002 (head)`. |
+| AC-003 | Cumplido | Prueba de integración: `POST /api/ingresos` → `201` con `id`. |
+| AC-004 | Cumplido | Prueba de integración: listado ordenado por `fecha DESC, id DESC`. |
+| AC-005 | Cumplido | Pruebas de `GET` por id con `200` y `404`. |
+| AC-006 | Cumplido | Prueba de `PUT` con actualización de los tres campos y persistencia. |
+| AC-007 | Cumplido | Pruebas de `DELETE` con `204` y `404`. |
+| AC-008 | Cumplido | Pruebas de `422` para importe, descripción, fecha y campos ausentes. |
+| AC-009 | Cumplido | Inserciones directas inválidas producen `IntegrityError` por los checks. |
+| AC-010 | Cumplido | Ida y vuelta `1500.5` → `1500.50` y límite `9999999999.99` como string. |
+| AC-011 | Cumplido | `uv run pytest` sin `TEST_DATABASE_URL`: 31 passed, 31 skipped. |
+| AC-012 | Cumplido | `docker compose exec api uv run pytest`: 62 passed contra `personal_finance_test`. |
+| AC-013 | Cumplido | Prueba de OpenAPI para `POST`, `GET`, `PUT` y `DELETE`. |
+| AC-014 | Cumplido | `/api/health` 200, frontend 7 pruebas, lint/typecheck/build y Docker healthy. |
 
 ## Notas
 

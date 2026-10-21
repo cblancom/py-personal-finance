@@ -1,5 +1,12 @@
+from datetime import date
+from decimal import Decimal
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.db.models import Income
 
 pytestmark = pytest.mark.integration
 
@@ -118,3 +125,99 @@ def test_delete_income_returns_404(client: TestClient):
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Ingreso no encontrado"}
+
+
+@pytest.mark.parametrize(
+    ("input_value", "expected"),
+    [
+        ("1500.5", "1500.50"),
+        ("9999999999.99", "9999999999.99"),
+    ],
+)
+def test_amount_round_trip_normalizes_two_decimals(
+    client: TestClient, input_value: str, expected: str
+):
+    response = client.post("/api/ingresos", json={**PAYLOAD, "valor": input_value})
+
+    assert response.status_code == 201
+    assert response.json()["valor"] == expected
+
+
+def test_create_trims_description(client: TestClient):
+    response = client.post(
+        "/api/ingresos",
+        json={**PAYLOAD, "descripcion": "  Salario  "},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["descripcion"] == "Salario"
+
+
+@pytest.mark.parametrize("valor", ["0", "-1", "1.234", "10000000000.00", None])
+def test_create_rejects_invalid_amount(client: TestClient, valor: str | None):
+    response = client.post("/api/ingresos", json={**PAYLOAD, "valor": valor})
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("descripcion", ["", "   ", "x" * 201])
+def test_create_rejects_invalid_description(client: TestClient, descripcion: str):
+    response = client.post(
+        "/api/ingresos",
+        json={**PAYLOAD, "descripcion": descripcion},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("fecha", ["", "21/10/2026", "not-a-date"])
+def test_create_rejects_invalid_date(client: TestClient, fecha: str):
+    response = client.post("/api/ingresos", json={**PAYLOAD, "fecha": fecha})
+
+    assert response.status_code == 422
+
+
+def test_create_rejects_missing_fields(client: TestClient):
+    response = client.post("/api/ingresos", json={})
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("valor", [Decimal("0"), Decimal("-1")])
+def test_database_rejects_non_positive_amount(
+    test_session_factory: sessionmaker[Session], valor: Decimal
+):
+    session = test_session_factory()
+    try:
+        session.add(
+            Income(
+                date=date(2026, 10, 21),
+                description="Salario",
+                amount=valor,
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+    finally:
+        session.rollback()
+        session.close()
+
+
+@pytest.mark.parametrize("descripcion", ["", "   "])
+def test_database_rejects_blank_description(
+    test_session_factory: sessionmaker[Session], descripcion: str
+):
+    session = test_session_factory()
+    try:
+        session.add(
+            Income(
+                date=date(2026, 10, 21),
+                description=descripcion,
+                amount=Decimal("100.00"),
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+    finally:
+        session.rollback()
+        session.close()

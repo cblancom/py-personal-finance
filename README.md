@@ -6,11 +6,11 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 ## Estado
 
-La Fase 0 (`001-fundaciones`) está implementada y validada (T-001 a T-012). El backend, el frontend y el entorno Docker de desarrollo están operativos.
+La Fase 0 (`001-fundaciones`) está implementada y validada. La API de ingresos (`002-api-ingresos`) está implementada y validada (T-001 a T-008). El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La aplicación todavía no permite registrar movimientos financieros. Por ahora la pantalla inicial muestra el estado de la API y el endpoint `/api/health` verifica la conexión con PostgreSQL. El registro de ingresos y gastos comienza en las especificaciones 002 y 003.
+La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. La API ya expone el CRUD completo de ingresos; el registro de gastos comienza en la especificación 003.
 
-El estado detallado está en [`specs/001-fundaciones/tasks.md`](specs/001-fundaciones/tasks.md).
+El estado detallado está en [`specs/README.md`](specs/README.md) y [`specs/002-api-ingresos/tasks.md`](specs/002-api-ingresos/tasks.md).
 
 ## Stack
 
@@ -78,6 +78,39 @@ El endpoint de salud responde:
 
 Si PostgreSQL no está disponible, responde `503` con `status: degraded` y `database: unavailable`.
 
+## API de ingresos
+
+Base: `/api/ingresos`. La documentación interactiva está en `/docs`.
+
+| Método | Ruta | Resultado |
+|---|---|---|
+| `POST` | `/api/ingresos` | `201` con el ingreso creado |
+| `GET` | `/api/ingresos` | `200` con la lista, ordenada por `fecha DESC, id DESC` |
+| `GET` | `/api/ingresos/{income_id}` | `200` o `404` |
+| `PUT` | `/api/ingresos/{income_id}` | `200` con reemplazo completo, `404` o `422` |
+| `DELETE` | `/api/ingresos/{income_id}` | `204`, `404` |
+
+Ejemplo de creación:
+
+```bash
+curl -X POST http://localhost:8000/api/ingresos \
+  -H 'Content-Type: application/json' \
+  -d '{"fecha":"2026-10-21","descripcion":"Salario","valor":"1500.50"}'
+```
+
+Respuesta:
+
+```json
+{
+  "fecha": "2026-10-21",
+  "descripcion": "Salario",
+  "valor": "1500.50",
+  "id": 1
+}
+```
+
+`valor` se transporta como string decimal para preservar la precisión. La entrada acepta string o número; el frontend enviará string. `descripcion` se recorta y debe tener entre 1 y 200 caracteres. `fecha` usa ISO `YYYY-MM-DD`.
+
 ## Desarrollo local
 
 El flujo principal es Docker Compose. Para reemplazar solo la API o el frontend por procesos locales, detén primero los servicios que vayas a sustituir:
@@ -133,7 +166,22 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Las pruebas del backend no necesitan PostgreSQL: la dependencia de base de datos se sustituye en las pruebas unitarias.
+Las pruebas unitarias no necesitan PostgreSQL. Las de integración usan `TEST_DATABASE_URL`, crean o reutilizan `personal_finance_test`, ejecutan migraciones y se omiten si la variable no está configurada.
+
+Suite completa con Docker Compose:
+
+```bash
+docker compose exec api uv run pytest
+```
+
+Suite completa en local, usando el `.env` de la raíz:
+
+```bash
+cd backend
+uv run --env-file ../.env pytest
+```
+
+Sin `TEST_DATABASE_URL`, `uv run pytest` ejecuta solo las unitarias y omite las de integración.
 
 ### Frontend
 
@@ -191,6 +239,7 @@ No se usa `Base.metadata.create_all()`.
 | `API_PORT` | `8000` | Puerto de la API en localhost |
 | `WEB_PORT` | `3001` | Puerto de la interfaz en localhost |
 | `DATABASE_URL` | URL a `localhost:5433` | Backend ejecutado fuera de Docker |
+| `TEST_DATABASE_URL` | URL a `localhost:5433/personal_finance_test` | Base aislada para pruebas de integración; se crea automáticamente |
 | `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Proxy de Vite; Compose usa `http://api:8000` |
 
 No uses los valores de ejemplo en producción.
@@ -202,7 +251,7 @@ No uses los valores de ejemplo en producción.
 ├── backend/
 │   ├── app/                # FastAPI, configuración, sesión y rutas
 │   ├── alembic/            # Migraciones
-│   ├── tests/              # Pruebas unitarias
+│   ├── tests/              # Pruebas unitarias e integración
 │   ├── pyproject.toml
 │   └── uv.lock
 ├── frontend/
@@ -258,6 +307,16 @@ cd frontend
 npm install
 ```
 
+### Las pruebas de integración se omiten
+
+Configura `TEST_DATABASE_URL` o ejecuta la suite dentro de Docker:
+
+```bash
+docker compose exec api uv run pytest
+```
+
+La base de test no debe ser la misma que `DATABASE_URL`; el fixture aborta si coinciden.
+
 ### Se perdió la base de datos
 
 Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker compose down` conserva los datos.
@@ -268,5 +327,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`AGENTS.md`](AGENTS.md): instrucciones operativas y comandos.
 - [`specs/README.md`](specs/README.md): índice y plan por fases.
 - [`specs/001-fundaciones/`](specs/001-fundaciones/): especificación, plan y tareas de la Fase 0.
+- [`specs/002-api-ingresos/`](specs/002-api-ingresos/): especificación, plan y tareas de la API de ingresos.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.

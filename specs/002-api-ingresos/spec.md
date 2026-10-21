@@ -1,6 +1,6 @@
 # Especificación 002 — API de ingresos
 
-- Estado: aprobada; supuestos aceptados.
+- Estado: validada.
 - Fase: 1.
 - Iteración: MVP.
 - Dependencias: `specs/001-fundaciones/`.
@@ -321,4 +321,6 @@ Ninguna bloqueante para elaborar el plan técnico.
 
 ## 11. Resultado de validación
 
-Pendiente de implementación.
+- Fecha: 2026-10-21.
+- Veredicto: **cumplida**.
+- Evidencia: tabla de validación en [`tasks.md`](tasks.md). Suite completa en Docker con 62 pruebas, migración reversible en la base de test, frontend sin regresiones y documentación actualizada.

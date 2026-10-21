@@ -19,7 +19,7 @@ Stack:
 
 ## 2. Estado actual
 
-La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). El backend, el frontend y el entorno Docker de desarrollo están operativos. El estado detallado vive en `specs/001-fundaciones/tasks.md`.
+La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). La API de ingresos (`specs/002-api-ingresos/`) está implementada y validada (T-001 a T-008). El backend, el frontend y el entorno Docker de desarrollo están operativos. La interfaz aún no incluye formularios de movimientos. El estado detallado vive en los `tasks.md` de cada especificación.
 
 ## 3. Estructura objetivo
 
@@ -33,7 +33,11 @@ project-root/
 ├── .dockerignore
 ├── specs/
 │   ├── README.md
-│   └── 001-fundaciones/
+│   ├── 001-fundaciones/
+│   │   ├── spec.md
+│   │   ├── plan.md
+│   │   └── tasks.md
+│   └── 002-api-ingresos/
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks.md
@@ -48,6 +52,9 @@ project-root/
 │   │   └── main.py
 │   ├── alembic/
 │   ├── tests/
+│   │   ├── api/
+│   │   ├── core/
+│   │   └── integration/
 │   ├── pyproject.toml
 │   └── uv.lock
 ├── frontend/
@@ -80,6 +87,7 @@ No se crean carpetas vacías ni capas adicionales sin necesidad.
 uv sync
 uv run --env-file ../.env uvicorn app.main:app --reload --port 8000
 uv run pytest
+uv run --env-file ../.env pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run --env-file ../.env alembic upgrade head
@@ -88,6 +96,8 @@ uv run --env-file ../.env alembic revision --autogenerate -m "describe change"
 ```
 
 `--env-file ../.env` requiere un `.env` en la raíz, creado a partir de `.env.example`.
+
+`uv run pytest` ejecuta las pruebas unitarias y omite las de integración si falta `TEST_DATABASE_URL`. `uv run --env-file ../.env pytest` ejecuta la suite completa contra `personal_finance_test`. El fixture crea la base si no existe, aplica Alembic y se niega a usar la misma base que `DATABASE_URL`.
 
 ### Frontend (desde `frontend/`)
 
@@ -109,6 +119,7 @@ npm run build
 docker compose up --build
 docker compose down
 docker compose logs -f
+docker compose exec api uv run pytest
 docker compose exec api uv run alembic upgrade head
 docker compose exec db psql -U postgres -d personal_finance
 ```
@@ -116,8 +127,9 @@ docker compose exec db psql -U postgres -d personal_finance
 ### Verificación mínima antes de terminar una tarea
 
 ```bash
-cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest
-cd frontend && npm run lint && npm run typecheck && npm run test && npm run build
+(cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest)
+docker compose exec api uv run pytest
+(cd frontend && npm run lint && npm run typecheck && npm run test && npm run build)
 ```
 
 No se declara una tarea terminada si alguno de estos comandos falla y el fallo está relacionado con el cambio.
