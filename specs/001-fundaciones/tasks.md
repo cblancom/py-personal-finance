@@ -121,11 +121,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     grep -R "localhost:8000" src || true
     ```
 
-- [ ] **T-008 — Implementar la pantalla inicial y sus pruebas**
+- [x] **T-008 — Implementar la pantalla inicial y sus pruebas**
   - Requisitos: FR-006, FR-009, NFR-005.
   - Dependencias: T-007.
   - Descripción: crear `App.tsx` y `ApiStatus.tsx`; consultar `/api/health` al montar; manejar carga, disponible y no disponible; cancelar la actualización al desmontar. Probar título, carga, éxito y fallo con `fetch` simulado.
   - Hecho cuando: las pruebas de componente pasan y la interfaz no se rompe cuando la API falla.
+  - Evidencia (2026-10-21): pantalla con título, mensaje y estado accesible (`role="status"`, `aria-live="polite"`); estados de carga, disponible y no disponible; solicitud cancelada al desmontar y actualización protegida con bandera `active`. 7 pruebas pasan (5 de App y 2 del cliente) cubriendo éxito, `503`, error de red y carga; lint, typecheck y build pasan. Se configuró `cleanup` de Testing Library en el setup.
   - Verificación:
     ```bash
     cd frontend

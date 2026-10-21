@@ -21,3 +21,19 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
+
+.api-status {
+  font-weight: 600;
+}
+
+.api-status--loading {
+  color: #475569;
+}
+
+.api-status--ok {
+  color: #166534;
+}
+
+.api-status--unavailable {
+  color: #b91c1c;
+}
