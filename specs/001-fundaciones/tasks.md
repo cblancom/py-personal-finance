@@ -136,11 +136,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     npm run build
     ```
 
-- [ ] **T-009 — Crear el Dockerfile de la API y el contexto de build**
+- [x] **T-009 — Crear el Dockerfile de la API y el contexto de build**
   - Requisitos: FR-007, NFR-001, NFR-002.
   - Dependencias: T-004.
   - Descripción: crear `docker/Dockerfile.api` con `uv`, `uv sync --frozen`, `UV_PROJECT_ENVIRONMENT=/opt/venv` y Uvicorn. Crear `.dockerignore` excluyendo `legacy/`, `.env`, cachés, entornos virtuales y dependencias del frontend.
   - Hecho cuando: la imagen construye y el módulo `app.main` importa dentro del contenedor con una URL ficticia.
+  - Evidencia (2026-10-21): imagen `py-personal-finance-api:dev` construida; `uv sync --frozen` instaló 35 paquetes en `/opt/venv`; el contenedor importa `app.main` y reporta `Py Personal Finance API`. Contexto de build reducido a 211 kB. `.dockerignore` excluye `legacy/`, secretos, cachés, entornos virtuales y dependencias del frontend.
   - Verificación:
     ```bash
     docker build -f docker/Dockerfile.api -t py-personal-finance-api:dev .
@@ -149,11 +150,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
       py-personal-finance-api:dev python -c "from app.main import app; print(app.title)"
     ```
 
-- [ ] **T-010 — Crear Docker Compose de desarrollo**
+- [x] **T-010 — Crear Docker Compose de desarrollo**
   - Requisitos: FR-001, FR-007, NFR-001, NFR-002, NFR-009.
   - Dependencias: T-005, T-008, T-009.
   - Descripción: crear `compose.yaml` con `db`, `api` y `web`; healthchecks; volúmenes persistentes; montajes de desarrollo; `depends_on`; puertos enlazados a `127.0.0.1`; proxy de Vite hacia `api:8000`. Crear `.env.example` y actualizar `.gitignore`.
   - Hecho cuando: `docker compose up --build` deja los tres servicios activos, la API responde `200` en salud y la web carga.
+  - Evidencia (2026-10-21): `docker compose config -q` pasa; `docker compose up --build -d` deja `db`, `api` y `web` en estado `healthy`; `/api/health` responde `200` con `{"status":"ok","database":"ok"}`; la web responde `200`; el proxy `web → api` en `/api/health` responde `200`; todos los puertos publicados están en `127.0.0.1`; `.env.example` creado y `.env` ignorado.
   - Verificación:
     ```bash
     docker compose config -q
