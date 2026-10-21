@@ -107,11 +107,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     npm run build
     ```
 
-- [ ] **T-007 — Crear el cliente HTTP, los tipos y el proxy**
+- [x] **T-007 — Crear el cliente HTTP, los tipos y el proxy**
   - Requisitos: FR-006, NFR-003, NFR-007.
   - Dependencias: T-006.
   - Descripción: configurar el proxy `/api` en `vite.config.ts` con `VITE_API_PROXY_TARGET`; crear `src/types/health.ts`, `src/api/client.ts` y `src/api/health.ts`. Los componentes no deben contener URLs absolutas.
   - Hecho cuando: typecheck y build pasan; el proxy apunta a `http://localhost:8000` por defecto y a `http://api:8000` en Compose.
+  - Evidencia (2026-10-21): proxy `/api` configurable mediante `VITE_API_PROXY_TARGET`, con valor por defecto `http://localhost:8000`; cliente `fetch` relativo con `ApiError`, tipos de salud y `getHealth`. 3 pruebas pasan (1 de App y 2 del cliente); lint, typecheck y build pasan; no hay URLs absolutas en `src`. La asignación `http://api:8000` se valida al crear Compose en T-010.
   - Verificación:
     ```bash
     cd frontend
