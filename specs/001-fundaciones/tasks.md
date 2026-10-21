@@ -18,11 +18,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
 
 ## Tareas
 
-- [ ] **T-001 — Crear el esqueleto del backend y fijar dependencias**
+- [x] **T-001 — Crear el esqueleto del backend y fijar dependencias**
   - Requisitos: FR-001, FR-010, NFR-004, NFR-008.
   - Dependencias: ninguna.
   - Descripción: crear `backend/app/{api/routes,api/schemas,core,db}`, `backend/tests/` y `backend/pyproject.toml`; declarar dependencias de ejecución y desarrollo; configurar ruff y pytest; generar `uv.lock`.
   - Hecho cuando: `uv sync` instala todo; `uv run ruff check .` y `uv run ruff format --check .` pasan; `uv.lock` existe.
+  - Evidencia (2026-10-21): `uv sync` instaló 35 paquetes; `ruff check` y `ruff format --check` pasan (7 archivos formateados); imports de FastAPI, SQLAlchemy, Alembic y psycopg correctos; `uv.lock` generado.
   - Verificación:
     ```bash
     cd backend
@@ -32,11 +33,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     uv run python -c "import fastapi, sqlalchemy, alembic, psycopg"
     ```
 
-- [ ] **T-002 — Implementar la configuración por entorno**
+- [x] **T-002 — Implementar la configuración por entorno**
   - Requisitos: FR-003, NFR-002, NFR-007.
   - Dependencias: T-001.
   - Descripción: crear `app/core/config.py` con `Settings`, `load_settings(env)` y `get_settings()`; exigir `DATABASE_URL` y fallar con un mensaje que no exponga su valor. Añadir pruebas unitarias para configuración válida y ausente.
   - Hecho cuando: las pruebas de configuración pasan y el mensaje de error nombra `DATABASE_URL` sin mostrar secretos.
+  - Evidencia (2026-10-21): 5 pruebas pasan; se cubren URL válida, variable ausente, valor en blanco, no filtración de otros valores y caché de `get_settings`. Ruff y formato pasan (10 archivos).
   - Verificación:
     ```bash
     cd backend
@@ -44,11 +46,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     uv run ruff check .
     ```
 
-- [ ] **T-003 — Crear las fundaciones de SQLAlchemy**
+- [x] **T-003 — Crear las fundaciones de SQLAlchemy**
   - Requisitos: FR-004, NFR-003.
   - Dependencias: T-001, T-002.
   - Descripción: crear `app/db/base.py` con `Base` y `app/db/session.py` con motor, `pool_pre_ping`, `connect_timeout=3`, `SessionLocal` y `get_db`. No usar `create_all`.
   - Hecho cuando: los módulos importan con una `DATABASE_URL` válida, no existe ninguna llamada a `create_all` y ruff pasa.
+  - Evidencia (2026-10-21): import de `engine`, `SessionLocal` y `get_db` correcto (driver `postgresql`); no hay llamadas a `create_all`; ruff check y format pasan (12 archivos); las 5 pruebas existentes siguen pasando.
   - Verificación:
     ```bash
     cd backend
@@ -58,11 +61,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     uv run ruff check .
     ```
 
-- [ ] **T-004 — Implementar `/api/health` con pruebas unitarias**
+- [x] **T-004 — Implementar `/api/health` con pruebas unitarias**
   - Requisitos: FR-002, FR-004, FR-008, NFR-006, NFR-007.
   - Dependencias: T-003.
   - Descripción: crear `app/api/schemas/health.py`, `app/api/routes/health.py` y registrar el router en `app/main.py`. Escribir primero las pruebas de éxito y fallo con sustitución de `get_db`. Responder `503` sin filtrar detalles de la excepción.
   - Hecho cuando: `uv run pytest` pasa sin PostgreSQL; `/api/health` aparece en OpenAPI; las respuestas tienen la forma acordada.
+  - Evidencia (2026-10-21): 9 pruebas pasan sin PostgreSQL (5 de configuración y 4 de salud); se cubren `200`, `503`, no filtración de credenciales en respuesta/logs y presencia en OpenAPI. `ruff check` y format pasan (18 archivos). Se sustituyó `httpx` por `httpx2` para eliminar el warning de deprecación de `TestClient`.
   - Verificación:
     ```bash
     cd backend
@@ -72,11 +76,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
       uv run python -c "from app.main import app; print('/api/health' in app.openapi()['paths'])"
     ```
 
-- [ ] **T-005 — Inicializar Alembic y crear la revisión base**
+- [x] **T-005 — Inicializar Alembic y crear la revisión base**
   - Requisitos: FR-005, NFR-003.
   - Dependencias: T-003.
   - Descripción: crear `alembic.ini`, `alembic/env.py`, `alembic/script.py.mako` y `alembic/versions/0001_baseline.py`. Obtener la URL desde `get_settings()`, escapar `%` y usar `Base.metadata` como metadata objetivo. La revisión base no crea tablas.
   - Hecho cuando: Alembic reconoce la revisión `0001`; no hay URL fija en `alembic.ini`; upgrade y downgrade se validan en T-012.
+  - Evidencia (2026-10-21): `alembic history` muestra `<base> -> 0001 (head), baseline`; `alembic heads` muestra `0001 (head)`; `sqlalchemy.url` está vacío en `alembic.ini`; la revisión base no crea tablas. Ruff y formato pasan (20 archivos); las 9 pruebas siguen pasando. Upgrade/downgrade quedan para T-012.
   - Verificación:
     ```bash
     cd backend
