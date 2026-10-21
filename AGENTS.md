@@ -19,7 +19,7 @@ Stack:
 
 ## 2. Estado actual
 
-La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). Las APIs de ingresos (`specs/002-api-ingresos/`) y gastos (`specs/003-api-gastos/`) están implementadas y validadas (T-001 a T-008 en cada una). El backend, el frontend y el entorno Docker de desarrollo están operativos. La interfaz aún no incluye formularios de movimientos. El estado detallado vive en los `tasks.md` de cada especificación.
+La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). Las APIs de ingresos (`specs/002-api-ingresos/`) y gastos (`specs/003-api-gastos/`) están implementadas y validadas (T-001 a T-008 en cada una), y la API de resumen (`specs/004-api-resumen/`) está implementada y validada (T-001 a T-004). El backend, el frontend y el entorno Docker de desarrollo están operativos. La interfaz aún no incluye formularios de movimientos. El estado detallado vive en los `tasks.md` de cada especificación.
 
 ## 3. Estructura objetivo
 
@@ -41,7 +41,11 @@ project-root/
 │   │   ├── spec.md
 │   │   ├── plan.md
 │   │   └── tasks.md
-│   └── 003-api-gastos/
+│   ├── 003-api-gastos/
+│   │   ├── spec.md
+│   │   ├── plan.md
+│   │   └── tasks.md
+│   └── 004-api-resumen/
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks.md

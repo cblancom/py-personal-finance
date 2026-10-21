@@ -6,11 +6,11 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 ## Estado
 
-La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`) y gastos (`003-api-gastos`) están implementadas y validadas (T-001 a T-008 en cada una). El backend, el frontend y el entorno Docker de desarrollo están operativos.
+La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`) están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. Ambas APIs ya exponen el CRUD completo; los formularios llegan en la especificación 005.
+La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. Las APIs ya exponen el CRUD completo y el resumen global; los formularios llegan en la especificación 005.
 
-El estado detallado está en [`specs/README.md`](specs/README.md), [`specs/002-api-ingresos/tasks.md`](specs/002-api-ingresos/tasks.md) y [`specs/003-api-gastos/tasks.md`](specs/003-api-gastos/tasks.md).
+El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de las especificaciones 002, 003 y 004.
 
 ## Stack
 
@@ -151,6 +151,30 @@ Respuesta:
 
 `tipo` es obligatorio y distingue mayúsculas. `valor` usa la misma representación decimal que en ingresos. La edición reemplaza los cuatro campos.
 
+## API de resumen
+
+`GET /api/resumen` devuelve los totales globales, el balance y el desglose de gastos por tipo. No acepta parámetros ni filtros.
+
+```json
+{
+  "total_ingresos": "5000.00",
+  "total_gastos": "1500.50",
+  "balance": "3499.50",
+  "gastos_por_tipo": {
+    "NECESARIO": "1000.00",
+    "NO_NECESARIO": "300.50",
+    "INVERSION": "200.00"
+  }
+}
+```
+
+Reglas:
+
+- `balance = total_ingresos - total_gastos`; puede ser negativo.
+- `gastos_por_tipo` incluye siempre los tres tipos, con `"0.00"` cuando no hay movimientos.
+- `total_gastos` coincide con la suma del desglose.
+- Todos los importes son strings con dos decimales.
+
 ## Desarrollo local
 
 El flujo principal es Docker Compose. Para reemplazar solo la API o el frontend por procesos locales, detén primero los servicios que vayas a sustituir:
@@ -206,7 +230,7 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Las pruebas unitarias no necesitan PostgreSQL. Las de integración usan `TEST_DATABASE_URL`, crean o reutilizan `personal_finance_test`, ejecutan migraciones, limpian `ingresos` y `gastos` entre casos y se omiten si la variable no está configurada.
+Las pruebas unitarias no necesitan PostgreSQL. Las de integración cubren ingresos, gastos y resumen; usan `TEST_DATABASE_URL`, crean o reutilizan `personal_finance_test`, ejecutan migraciones, limpian `ingresos` y `gastos` entre casos y se omiten si la variable no está configurada.
 
 Suite completa con Docker Compose:
 
@@ -369,5 +393,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`specs/001-fundaciones/`](specs/001-fundaciones/): especificación, plan y tareas de la Fase 0.
 - [`specs/002-api-ingresos/`](specs/002-api-ingresos/): especificación, plan y tareas de la API de ingresos.
 - [`specs/003-api-gastos/`](specs/003-api-gastos/): especificación, plan y tareas de la API de gastos.
+- [`specs/004-api-resumen/`](specs/004-api-resumen/): especificación, plan y tareas de la API de resumen.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.
