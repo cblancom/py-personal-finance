@@ -6,11 +6,11 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 ## Estado
 
-La Fase 0 (`001-fundaciones`) está implementada y validada. La API de ingresos (`002-api-ingresos`) está implementada y validada (T-001 a T-008). El backend, el frontend y el entorno Docker de desarrollo están operativos.
+La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`) y gastos (`003-api-gastos`) están implementadas y validadas (T-001 a T-008 en cada una). El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. La API ya expone el CRUD completo de ingresos; el registro de gastos comienza en la especificación 003.
+La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. Ambas APIs ya exponen el CRUD completo; los formularios llegan en la especificación 005.
 
-El estado detallado está en [`specs/README.md`](specs/README.md) y [`specs/002-api-ingresos/tasks.md`](specs/002-api-ingresos/tasks.md).
+El estado detallado está en [`specs/README.md`](specs/README.md), [`specs/002-api-ingresos/tasks.md`](specs/002-api-ingresos/tasks.md) y [`specs/003-api-gastos/tasks.md`](specs/003-api-gastos/tasks.md).
 
 ## Stack
 
@@ -111,6 +111,46 @@ Respuesta:
 
 `valor` se transporta como string decimal para preservar la precisión. La entrada acepta string o número; el frontend enviará string. `descripcion` se recorta y debe tener entre 1 y 200 caracteres. `fecha` usa ISO `YYYY-MM-DD`.
 
+## API de gastos
+
+Base: `/api/gastos`. La documentación interactiva está en `/docs`.
+
+| Método | Ruta | Resultado |
+|---|---|---|
+| `POST` | `/api/gastos` | `201` con el gasto creado |
+| `GET` | `/api/gastos` | `200` con la lista, ordenada por `fecha DESC, id DESC` |
+| `GET` | `/api/gastos/{expense_id}` | `200` o `404` |
+| `PUT` | `/api/gastos/{expense_id}` | `200` con reemplazo completo, `404` o `422` |
+| `DELETE` | `/api/gastos/{expense_id}` | `204`, `404` |
+
+Valores válidos de `tipo`:
+
+- `NECESARIO`
+- `NO_NECESARIO`
+- `INVERSION`
+
+Ejemplo de creación:
+
+```bash
+curl -X POST http://localhost:8000/api/gastos \
+  -H 'Content-Type: application/json' \
+  -d '{"fecha":"2026-10-21","descripcion":"Mercado","tipo":"NECESARIO","valor":"120.50"}'
+```
+
+Respuesta:
+
+```json
+{
+  "fecha": "2026-10-21",
+  "descripcion": "Mercado",
+  "tipo": "NECESARIO",
+  "valor": "120.50",
+  "id": 1
+}
+```
+
+`tipo` es obligatorio y distingue mayúsculas. `valor` usa la misma representación decimal que en ingresos. La edición reemplaza los cuatro campos.
+
 ## Desarrollo local
 
 El flujo principal es Docker Compose. Para reemplazar solo la API o el frontend por procesos locales, detén primero los servicios que vayas a sustituir:
@@ -166,7 +206,7 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Las pruebas unitarias no necesitan PostgreSQL. Las de integración usan `TEST_DATABASE_URL`, crean o reutilizan `personal_finance_test`, ejecutan migraciones y se omiten si la variable no está configurada.
+Las pruebas unitarias no necesitan PostgreSQL. Las de integración usan `TEST_DATABASE_URL`, crean o reutilizan `personal_finance_test`, ejecutan migraciones, limpian `ingresos` y `gastos` entre casos y se omiten si la variable no está configurada.
 
 Suite completa con Docker Compose:
 
@@ -328,5 +368,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`specs/README.md`](specs/README.md): índice y plan por fases.
 - [`specs/001-fundaciones/`](specs/001-fundaciones/): especificación, plan y tareas de la Fase 0.
 - [`specs/002-api-ingresos/`](specs/002-api-ingresos/): especificación, plan y tareas de la API de ingresos.
+- [`specs/003-api-gastos/`](specs/003-api-gastos/): especificación, plan y tareas de la API de gastos.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.

@@ -21,7 +21,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 |---|---|---|---|---|---|
 | 001 | [`001-fundaciones`](001-fundaciones/spec.md) ([plan](001-fundaciones/plan.md), [tareas](001-fundaciones/tasks.md)) | 0 | Estructura, salud, SQLAlchemy, Alembic, compose de desarrollo y arneses de prueba | Constitución y AGENTS | Validada (T-001 a T-012 completadas) |
 | 002 | [`002-api-ingresos`](002-api-ingresos/spec.md) ([plan](002-api-ingresos/plan.md), [tareas](002-api-ingresos/tasks.md)) | 1 | Modelo, migración y CRUD completo de ingresos | 001 | Validada (T-001 a T-008 completadas) |
-| 003 | [`003-api-gastos`](003-api-gastos/spec.md) ([plan](003-api-gastos/plan.md), [tareas](003-api-gastos/tasks.md)) | 1 | Modelo, migración y CRUD completo de gastos con tipo | 001, 002 | En implementación (T-001 a T-004 completadas) |
+| 003 | [`003-api-gastos`](003-api-gastos/spec.md) ([plan](003-api-gastos/plan.md), [tareas](003-api-gastos/tasks.md)) | 1 | Modelo, migración y CRUD completo de gastos con tipo | 001, 002 | Validada (T-001 a T-008 completadas) |
 | 004 | `004-api-resumen` | 2 | Totales de ingresos y gastos, balance y desglose por tipo | 002, 003 | Pendiente |
 | 005 | `005-interfaz-mvp` | 3 | Formularios, listados, edición, eliminación, totales y estados de UI | 002, 003, 004 | Pendiente |
 | 006 | `006-entrega-docker` | 4 | Dockerfiles de producción, Nginx, prueba de humo y validación del MVP | 005 | Pendiente |
