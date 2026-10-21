@@ -1,6 +1,6 @@
 # Especificación 001 — Fundaciones del proyecto
 
-- Estado: aprobada.
+- Estado: validada.
 - Fase: 0.
 - Iteración: MVP.
 - Dependencias: `constitution.md`, `AGENTS.md`.
@@ -310,3 +310,9 @@ La base debe funcionar en Linux y macOS con Docker. El flujo no debe depender de
 ### Preguntas pendientes
 
 Ninguna bloqueante para elaborar el plan técnico de esta especificación.
+
+## 11. Resultado de validación
+
+- Fecha: 2026-10-21.
+- Veredicto: **cumplida**.
+- Evidencia: tabla de validación en [`tasks.md`](tasks.md).

@@ -19,7 +19,7 @@ Stack:
 
 ## 2. Estado actual
 
-El repositorio comienza desde cero. La implementación se inicia con `specs/001-fundaciones/`. Los comandos de este documento son el contrato operativo que esa especificación debe materializar; si un comando no existe todavía, la fase correspondiente no está terminada.
+La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). El backend, el frontend y el entorno Docker de desarrollo están operativos. El estado detallado vive en `specs/001-fundaciones/tasks.md`.
 
 ## 3. Estructura objetivo
 
@@ -30,7 +30,9 @@ project-root/
 ├── README.md
 ├── compose.yaml
 ├── .env.example
+├── .dockerignore
 ├── specs/
+│   ├── README.md
 │   └── 001-fundaciones/
 │       ├── spec.md
 │       ├── plan.md
@@ -76,18 +78,21 @@ No se crean carpetas vacías ni capas adicionales sin necesidad.
 
 ```bash
 uv sync
-uv run uvicorn app.main:app --reload --port 8000
+uv run --env-file ../.env uvicorn app.main:app --reload --port 8000
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
-uv run alembic upgrade head
-uv run alembic downgrade -1
-uv run alembic revision --autogenerate -m "describe change"
+uv run --env-file ../.env alembic upgrade head
+uv run --env-file ../.env alembic downgrade -1
+uv run --env-file ../.env alembic revision --autogenerate -m "describe change"
 ```
+
+`--env-file ../.env` requiere un `.env` en la raíz, creado a partir de `.env.example`.
 
 ### Frontend (desde `frontend/`)
 
 ```bash
+npm ci
 npm install
 npm run dev
 npm run lint
@@ -95,6 +100,8 @@ npm run typecheck
 npm run test
 npm run build
 ```
+
+`npm ci` es el flujo reproducible. `npm install` se usa solo al añadir o actualizar dependencias.
 
 ### Docker Compose (desde la raíz)
 
@@ -145,7 +152,8 @@ Cada especificación vive en `specs/NNN-nombre-funcionalidad/`.
 ## 8. Límites y acciones que requieren confirmación
 
 - No modificar, mover ni eliminar `legacy/`.
-- No hacer commits, push, PRs ni despliegues sin solicitud explícita.
+- No hacer commits, push, PRs ni despliegues sin solicitud explícita y una segunda confirmación de seguridad antes de ejecutar.
+- Las operaciones externas con efectos importantes requieren solicitud explícita y una segunda confirmación de seguridad.
 - No ejecutar migraciones destructivas, borrar volúmenes ni reiniciar bases de datos con datos sin autorización.
 - No exponer la aplicación a Internet ni añadir autenticación fuera de una especificación aprobada.
 - No introducir servicios, infraestructura o dependencias nuevas sin justificación y aprobación.

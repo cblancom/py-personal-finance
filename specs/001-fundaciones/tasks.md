@@ -81,7 +81,7 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
   - Dependencias: T-003.
   - Descripción: crear `alembic.ini`, `alembic/env.py`, `alembic/script.py.mako` y `alembic/versions/0001_baseline.py`. Obtener la URL desde `get_settings()`, escapar `%` y usar `Base.metadata` como metadata objetivo. La revisión base no crea tablas.
   - Hecho cuando: Alembic reconoce la revisión `0001`; no hay URL fija en `alembic.ini`; upgrade y downgrade se validan en T-012.
-  - Evidencia (2026-10-21): `alembic history` muestra `<base> -> 0001 (head), baseline`; `alembic heads` muestra `0001 (head)`; `sqlalchemy.url` está vacío en `alembic.ini`; la revisión base no crea tablas. Ruff y formato pasan (20 archivos); las 9 pruebas siguen pasando. Upgrade/downgrade quedan para T-012.
+  - Evidencia (2026-10-21): `alembic history` muestra `<base> -> 0001 (head), baseline`; `alembic heads` muestra `0001 (head)`; `sqlalchemy.url` está vacío en `alembic.ini`; la revisión base no crea tablas. Ruff y formato pasan (20 archivos); las 9 pruebas siguen pasando. Upgrade/downgrade validados en T-012.
   - Verificación:
     ```bash
     cd backend
@@ -165,11 +165,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     curl -I http://localhost:3001/
     ```
 
-- [ ] **T-011 — Documentar el arranque y alinear AGENTS**
+- [x] **T-011 — Documentar el arranque y alinear AGENTS**
   - Requisitos: FR-010, FR-011, NFR-001.
   - Dependencias: T-010.
   - Descripción: crear `README.md` con requisitos, arranque, URLs, desarrollo local, pruebas, migraciones y solución de problemas. Actualizar `AGENTS.md` con la segunda confirmación de seguridad indicada en la constitución y verificar que sus comandos coinciden con los scripts reales.
   - Hecho cuando: una persona puede seguir el README desde un clon limpio y todos los comandos documentados existen.
+  - Evidencia (2026-10-21): `README.md` con inicio rápido, URLs, desarrollo local, pruebas, migraciones, variables y solución de problemas; `AGENTS.md` actualizado con el estado real, `npm ci`, `--env-file` y la segunda confirmación de seguridad. Se verificó una copia limpia sin dependencias: `uv sync --frozen`, 9 pruebas, ruff, `npm ci`, lint, typecheck, 7 pruebas y build pasan. `docker compose config -q` pasa y `alembic current` reporta `0001 (head)`.
   - Verificación:
     ```bash
     docker compose config -q
@@ -177,11 +178,12 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
     cd ../frontend && npm run lint && npm run typecheck && npm run test && npm run build
     ```
 
-- [ ] **T-012 — Validar la Fase 0 y registrar evidencia**
+- [x] **T-012 — Validar la Fase 0 y registrar evidencia**
   - Requisitos: todos los criterios de aceptación de `spec.md`.
   - Dependencias: T-011.
   - Descripción: ejecutar la verificación completa, probar el estado degradado deteniendo PostgreSQL, ejecutar upgrade/downgrade/upgrade de Alembic, confirmar que solo existe `alembic_version`, revisar puertos y secretos, y registrar los resultados en este archivo.
   - Hecho cuando: todos los criterios de aceptación tienen evidencia y cualquier fallo queda documentado.
+  - Evidencia (2026-10-21): `docker compose down` + `up --build -d` deja los tres servicios `healthy`; `/api/health` responde `200`; al detener `db` responde `503`; al reiniciarla se recupera a `200`. Alembic ejecuta upgrade → downgrade base → upgrade; `alembic current` reporta `0001 (head)` y `\dt` muestra solo `alembic_version`. Backend: 9 pruebas sin PostgreSQL, ruff y formato OK. Frontend: 7 pruebas, lint, typecheck y build OK. Puertos solo en `127.0.0.1`; sin secretos en logs ni `.env` versionado. Veredicto: **cumplida**.
   - Verificación:
     ```bash
     docker compose up --build -d
@@ -231,22 +233,22 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
 
 ## Evidencia de validación
 
-Se completa durante T-012.
+Completada durante T-012.
 
 | Criterio | Resultado | Evidencia |
 |---|---|---|
-| AC-001 | Pendiente | |
-| AC-002 | Pendiente | |
-| AC-003 | Pendiente | |
-| AC-004 | Pendiente | |
-| AC-005 | Pendiente | |
-| AC-006 | Pendiente | |
-| AC-007 | Pendiente | |
-| AC-008 | Pendiente | |
-| AC-009 | Pendiente | |
-| AC-010 | Pendiente | |
-| AC-011 | Pendiente | |
-| AC-012 | Pendiente | |
+| AC-001 | Cumplido | `backend/{app,alembic,tests}`, `frontend/src`, `docker/Dockerfile.api`, `compose.yaml`, `specs/` y documentación presentes; `Dockerfile.web`/Nginx corresponden a 006. |
+| AC-002 | Cumplido | Contenedores y red recreados con `docker compose down` + `up --build -d`; `db`, `api` y `web` en estado `healthy`; volumen de PostgreSQL preservado (sin `down -v`). |
+| AC-003 | Cumplido | `GET /api/health` → `200 {"status":"ok","database":"ok"}`. |
+| AC-004 | Cumplido | Con `db` detenido, `GET /api/health` → `503 {"status":"degraded","database":"unavailable"}`; la API siguió en ejecución. |
+| AC-005 | Cumplido | `upgrade head` → `downgrade base` → `upgrade head`; `alembic current` = `0001 (head)`; `\dt` solo muestra `alembic_version`. |
+| AC-006 | Cumplido | Web responde `200`; pruebas de App cubren título y estados carga/disponible/no disponible. |
+| AC-007 | Cumplido | `uv run pytest` ejecutado con PostgreSQL detenido: 9 pruebas pasan. |
+| AC-008 | Cumplido | `npm run lint`, `typecheck`, `test` (7) y `build` pasan. |
+| AC-009 | Cumplido | `ruff check` y `ruff format --check` pasan (20 archivos). |
+| AC-010 | Cumplido | `.env` ignorado y no versionado; logs de API sin coincidencias de secretos; `.env.example` solo contiene valores locales. |
+| AC-011 | Cumplido | Copia limpia sin dependencias validada en T-011; comandos del README confirmados. |
+| AC-012 | Cumplido | `docker compose port` reporta `127.0.0.1` para db, api y web. |
 
 ## Notas
 
