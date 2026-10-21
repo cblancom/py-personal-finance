@@ -42,11 +42,12 @@ T-003 y T-004 pueden ejecutarse en paralelo después de T-002; el orden mostrado
     npm run typecheck
     ```
 
-- [ ] **T-003 — Implementar la sección de ingresos**
+- [x] **T-003 — Implementar la sección de ingresos**
   - Requisitos: FR-004, FR-006, FR-007, FR-008, FR-011, NFR-004, NFR-006.
   - Dependencias: T-002.
   - Descripción: crear `IncomeForm`, `IncomeList` e `IncomeSection`; permitir crear, editar y eliminar ingresos, con confirmación y validación local. Notificar los cambios a `App`.
   - Hecho cuando: se crea un ingreso; se edita con `PUT`; se elimina con confirmación y `DELETE`; cancelar edición no modifica datos; errores y envío doble se manejan; pruebas pasan.
+  - Evidencia (2026-10-21): formulario con validación local (fecha, descripción, valor, decimales y dígitos), edición y cancelación; listado con fecha/valor formateados y acciones; sección que crea, edita y elimina con confirmación, muestra errores de API y refresca mediante `onChanged`. 41 pruebas de frontend pasan; lint, typecheck y build OK.
   - Verificación:
     ```bash
     cd frontend
@@ -55,11 +56,12 @@ T-003 y T-004 pueden ejecutarse en paralelo después de T-002; el orden mostrado
     npm run typecheck
     ```
 
-- [ ] **T-004 — Implementar la sección de gastos**
+- [x] **T-004 — Implementar la sección de gastos**
   - Requisitos: FR-005, FR-006, FR-007, FR-008, FR-011, NFR-004, NFR-006.
   - Dependencias: T-002.
   - Descripción: crear `ExpenseForm`, `ExpenseList` y `ExpenseSection`; incluir selector de tipo, crear, editar y eliminar con confirmación y validación local. Notificar los cambios a `App`.
   - Hecho cuando: se crean gastos de los tres tipos; se edita el tipo y los demás campos; se elimina con confirmación; errores y envío doble se manejan; pruebas pasan.
+  - Evidencia (2026-10-21): formulario con selector de los tres tipos, validación local, edición y cancelación; listado con fecha, descripción, tipo y valor formateados; sección que crea, edita y elimina con confirmación, muestra errores de API y refresca mediante `onChanged`. 52 pruebas de frontend pasan; lint, typecheck y build OK.
   - Verificación:
     ```bash
     cd frontend

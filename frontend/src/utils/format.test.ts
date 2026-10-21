@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { expenseTypeLabel, formatDate, formatMoney } from './format'
+import {
+  expenseTypeLabel,
+  formatDate,
+  formatMoney,
+  todayIsoDate,
+} from './format'
 
 describe('formatMoney', () => {
   it('formats amounts with es-CO separators and two decimals', () => {
@@ -33,5 +38,11 @@ describe('expenseTypeLabel', () => {
     expect(expenseTypeLabel('NECESARIO')).toBe('Necesario')
     expect(expenseTypeLabel('NO_NECESARIO')).toBe('No necesario')
     expect(expenseTypeLabel('INVERSION')).toBe('Inversión')
+  })
+})
+
+describe('todayIsoDate', () => {
+  it('returns a local ISO date', () => {
+    expect(todayIsoDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 })
