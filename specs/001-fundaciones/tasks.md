@@ -91,15 +91,16 @@ El backend y el frontend pueden avanzar en paralelo después de T-001. T-010 int
       uv run alembic heads
     ```
 
-- [ ] **T-006 — Crear el frontend y configurar calidad y pruebas**
+- [x] **T-006 — Crear el frontend y configurar calidad y pruebas**
   - Requisitos: FR-001, FR-009, FR-010, NFR-004, NFR-008.
   - Dependencias: ninguna.
   - Descripción: crear `frontend/` con Vite + React + TypeScript estricto; instalar ESLint, Vitest, jsdom, Testing Library y jest-dom; definir scripts `dev`, `lint`, `typecheck`, `test`, `build`; añadir configuración de pruebas y una prueba de humo.
   - Hecho cuando: todos los comandos de calidad pasan y `package-lock.json` existe.
+  - Evidencia (2026-10-21): `npm ci` instala 252 paquetes sin vulnerabilidades; `lint`, `typecheck`, `test` (1 prueba) y `build` pasan. Se usa React 19.3.1, Vite 8.3.5, Vitest 4.1.12, TypeScript 6.0.3 y ESLint 10.13.0. Se fijaron `jsdom` 27.4.0 y `@testing-library/jest-dom` 6.9.1 por compatibilidad con Node 20. `package-lock.json` generado.
   - Verificación:
     ```bash
     cd frontend
-    npm install
+    npm ci
     npm run lint
     npm run typecheck
     npm run test
