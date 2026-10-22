@@ -20,8 +20,8 @@ export function IncomeList({ incomes, onEdit, onDelete }: IncomeListProps) {
             <tr>
               <th>Fecha</th>
               <th>Descripción</th>
-              <th>Valor</th>
-              <th>Acciones</th>
+              <th className="amount">Valor</th>
+              <th className="actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -29,10 +29,11 @@ export function IncomeList({ incomes, onEdit, onDelete }: IncomeListProps) {
               <tr key={income.id}>
                 <td>{formatDate(income.fecha)}</td>
                 <td>{income.descripcion}</td>
-                <td>{formatMoney(income.valor)}</td>
+                <td className="amount">{formatMoney(income.valor)}</td>
                 <td className="movement-actions">
                   <button
                     type="button"
+                    className="button button--link"
                     onClick={() => onEdit(income)}
                     aria-label={`Editar ingreso ${income.descripcion}`}
                   >
@@ -40,6 +41,7 @@ export function IncomeList({ incomes, onEdit, onDelete }: IncomeListProps) {
                   </button>
                   <button
                     type="button"
+                    className="button button--link"
                     onClick={() => onDelete(income)}
                     aria-label={`Eliminar ingreso ${income.descripcion}`}
                   >

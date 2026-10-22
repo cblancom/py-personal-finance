@@ -26,7 +26,7 @@ describe('ExpenseList', () => {
     expect(screen.getByText('21/10/2026')).toBeInTheDocument()
     expect(screen.getByText('Mercado')).toBeInTheDocument()
     expect(screen.getByText('Necesario')).toBeInTheDocument()
-    expect(screen.getByText('120,50')).toBeInTheDocument()
+    expect(screen.getByText('$ 120,50')).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Editar gasto Mercado' }),

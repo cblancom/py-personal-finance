@@ -19,22 +19,22 @@ describe('SummaryPanel', () => {
     render(<SummaryPanel summary={summary} />)
 
     expect(screen.getByRole('heading', { name: 'Resumen' })).toBeInTheDocument()
-    expect(screen.getByText('1.500,50')).toBeInTheDocument()
-    expect(screen.getByText('500,00')).toBeInTheDocument()
-    expect(screen.getByText('1.000,50')).toBeInTheDocument()
+    expect(screen.getByText('$ 1.500,50')).toBeInTheDocument()
+    expect(screen.getByText('$ 500,00')).toBeInTheDocument()
+    expect(screen.getByText('$ 1.000,50')).toBeInTheDocument()
     expect(screen.getByText('Necesario')).toBeInTheDocument()
     expect(screen.getByText('No necesario')).toBeInTheDocument()
     expect(screen.getByText('Inversión')).toBeInTheDocument()
-    expect(screen.getByText('300,00')).toBeInTheDocument()
-    expect(screen.getByText('200,00')).toBeInTheDocument()
+    expect(screen.getByText('$ 300,00')).toBeInTheDocument()
+    expect(screen.getByText('$ 200,00')).toBeInTheDocument()
   })
 
   it('marks a negative balance', () => {
     render(<SummaryPanel summary={{ ...summary, balance: '-150.25' }} />)
 
-    const balance = screen.getByText('-150,25')
+    const balance = screen.getByText('-$ 150,25')
 
-    expect(balance.closest('article')).toHaveClass('summary-card--negative')
+    expect(balance.closest('article')).toHaveClass('summary__balance--negative')
   })
 
   it('renders zero values for an empty summary', () => {
@@ -53,6 +53,6 @@ describe('SummaryPanel', () => {
       />,
     )
 
-    expect(screen.getAllByText('0,00')).toHaveLength(6)
+    expect(screen.getAllByText('$ 0,00')).toHaveLength(6)
   })
 })

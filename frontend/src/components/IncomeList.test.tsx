@@ -20,7 +20,7 @@ describe('IncomeList', () => {
 
     expect(screen.getByText('21/10/2026')).toBeInTheDocument()
     expect(screen.getByText('Salario')).toBeInTheDocument()
-    expect(screen.getByText('1.500,50')).toBeInTheDocument()
+    expect(screen.getByText('$ 1.500,50')).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Editar ingreso Salario' }),

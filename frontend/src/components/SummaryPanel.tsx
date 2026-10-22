@@ -11,23 +11,28 @@ export function SummaryPanel({ summary }: SummaryPanelProps) {
 
   return (
     <section className="summary" aria-labelledby="summary-title">
-      <h2 id="summary-title">Resumen</h2>
+      <h2 id="summary-title" className="summary__title">
+        Resumen
+      </h2>
 
-      <div className="summary__totals">
-        <article className="summary-card">
-          <h3>Total ingresos</h3>
-          <p>{formatMoney(summary.total_ingresos)}</p>
-        </article>
-        <article className="summary-card">
-          <h3>Total gastos</h3>
-          <p>{formatMoney(summary.total_gastos)}</p>
-        </article>
+      <div className="summary__main">
         <article
-          className={`summary-card${isNegativeBalance ? ' summary-card--negative' : ''}`}
+          className={`summary__balance${isNegativeBalance ? ' summary__balance--negative' : ''}`}
         >
           <h3>Balance</h3>
           <p>{formatMoney(summary.balance)}</p>
         </article>
+
+        <div className="summary__totals">
+          <article className="summary__total summary__total--income">
+            <h3>Ingresos</h3>
+            <p>{formatMoney(summary.total_ingresos)}</p>
+          </article>
+          <article className="summary__total summary__total--expense">
+            <h3>Gastos</h3>
+            <p>{formatMoney(summary.total_gastos)}</p>
+          </article>
+        </div>
       </div>
 
       <div className="summary__breakdown">

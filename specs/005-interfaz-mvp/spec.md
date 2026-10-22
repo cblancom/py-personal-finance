@@ -1,6 +1,6 @@
 # Especificación 005 — Interfaz MVP
 
-- Estado: aprobada; supuestos aceptados.
+- Estado: validada.
 - Fase: 3.
 - Iteración: MVP.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/` y `specs/004-api-resumen/`.
@@ -180,8 +180,8 @@ Después de crear, editar o eliminar, la aplicación debe volver a cargar la lis
 
 ### FR-010 — Formato de presentación
 
-- Los importes se muestran con separador de miles y dos decimales en formato `es-CO`.
-- No se muestra símbolo de moneda en el MVP.
+- Los importes se muestran en pesos colombianos (COP) con separador de miles y dos decimales en formato `es-CO`.
+- El símbolo `$` se muestra como parte del formato de moneda `COP`.
 - Las fechas se muestran en formato local legible sin desplazar el día.
 - Los tipos se muestran como `Necesario`, `No necesario` e `Inversión`.
 - Los valores internos de la API siguen siendo `NECESARIO`, `NO_NECESARIO` e `INVERSION`.
@@ -284,7 +284,7 @@ No se modifican los contratos del backend. Las suites de ingresos, gastos y resu
 - **BR-005:** la edición reemplaza el objeto completo.
 - **BR-006:** la eliminación requiere confirmación.
 - **BR-007:** los tipos de gasto se muestran con etiquetas en español, pero se envían con sus valores de API.
-- **BR-008:** el formato de importes es `es-CO`, con dos decimales y sin símbolo de moneda.
+- **BR-008:** el formato de importes es `es-CO`, con dos decimales y moneda COP (`$`). La moneda es fija; no hay selector.
 
 ## 7. Casos límite y errores
 
@@ -341,7 +341,7 @@ No se modifican los contratos del backend. Las suites de ingresos, gastos y resu
 
 ### Supuestos aceptados
 
-- Los importes se muestran en formato `es-CO`, con dos decimales y sin símbolo de moneda.
+- Los importes se muestran en formato `es-CO`, con dos decimales y moneda COP (`$`), que es fija.
 - La fecha por defecto es la fecha local actual.
 - La eliminación usa `window.confirm`.
 - La interfaz se escribe en español.

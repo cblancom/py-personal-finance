@@ -68,7 +68,7 @@ Flujo de mutación:
 | `frontend/src/api/summary.ts` | Consulta del resumen. |
 | `frontend/src/api/client.ts` | `fetch` común, `ApiError` y manejo de `204`. |
 | `frontend/src/utils/format.ts` | Formato de importes, fechas y etiquetas de tipo. |
-| `frontend/src/components/SummaryPanel.tsx` | Tarjetas de totales, balance y desglose. |
+| `frontend/src/components/SummaryPanel.tsx` | Balance, totales y desglose. |
 | `frontend/src/components/IncomeForm.tsx` | Formulario de creación/edición de ingresos. |
 | `frontend/src/components/ExpenseForm.tsx` | Formulario de creación/edición de gastos. |
 | `frontend/src/components/IncomeList.tsx` | Listado y acciones de ingresos. |
@@ -151,11 +151,11 @@ Las rutas son relativas y usan `/api`.
 
 ### Panel de resumen
 
-Tres tarjetas principales:
+Un balance protagonista y dos totales:
 
+- Balance.
 - Total ingresos.
 - Total gastos.
-- Balance.
 
 Debajo, el desglose:
 
@@ -236,7 +236,7 @@ No se usa Context, Redux, Zustand ni router.
 
 `utils/format.ts`:
 
-- `formatMoney(value: string)`: `Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`. Sin símbolo de moneda.
+- `formatMoney(value: string)`: `Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 2, maximumFractionDigits: 2 })`. Muestra `$` y un espacio no separable antes del número.
 - `formatDate(value: string)`: fecha local sin desplazar el día; se evita interpretar `YYYY-MM-DD` como UTC.
 - `expenseTypeLabel(type)`: `Necesario`, `No necesario`, `Inversión`.
 
@@ -268,7 +268,7 @@ No se muestran mensajes técnicos ni cuerpos de error del backend.
 - Pestañas con roles y `aria-selected`.
 - Contraste suficiente.
 - El balance y los estados no dependen solo del color.
-- CSS con grid/flex; tarjetas apiladas en móvil.
+- CSS con grid/flex; bloques apilados en móvil.
 - Tablas o listas con `overflow` controlado para no romper el layout.
 - Botones con área táctil suficiente.
 

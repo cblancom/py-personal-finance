@@ -8,13 +8,13 @@ import {
 
 describe('formatMoney', () => {
   it('formats amounts with es-CO separators and two decimals', () => {
-    expect(formatMoney('1500.5')).toBe('1.500,50')
-    expect(formatMoney('9999999999.99')).toBe('9.999.999.999,99')
+    expect(formatMoney('1500.5')).toBe('$\u00A01.500,50')
+    expect(formatMoney('9999999999.99')).toBe('$\u00A09.999.999.999,99')
   })
 
   it('formats zero and negative amounts', () => {
-    expect(formatMoney('0.00')).toBe('0,00')
-    expect(formatMoney('-150.25')).toBe('-150,25')
+    expect(formatMoney('0.00')).toBe('$\u00A00,00')
+    expect(formatMoney('-150.25')).toBe('-$\u00A0150,25')
   })
 
   it('returns non-numeric input unchanged', () => {

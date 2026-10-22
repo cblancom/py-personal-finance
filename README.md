@@ -6,11 +6,11 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 ## Estado
 
-La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`) están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
+La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz todavía no permite registrar movimientos: la pantalla inicial solo muestra el estado de la API. Las APIs ya exponen el CRUD completo y el resumen global; los formularios llegan en la especificación 005.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, consultar el resumen y muestra los importes en pesos colombianos (COP). La especificación 006 (entrega Docker de producción) está pendiente.
 
-El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de las especificaciones 002, 003 y 004.
+El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
 ## Stack
 
@@ -61,13 +61,17 @@ docker compose down
 
 ## Uso actual
 
-La pantalla inicial muestra:
+La interfaz de una sola página permite:
 
-- El nombre del proyecto.
-- Un mensaje de que la interfaz está en construcción.
-- El estado de la API: consultando, disponible o no disponible.
+- Consultar el balance, el total de ingresos, el total de gastos y el desglose por tipo.
+- Crear, editar y eliminar ingresos desde la pestaña `Ingresos`.
+- Crear, editar y eliminar gastos con tipo desde la pestaña `Gastos`.
+- Ver estados de carga, error con reintento, listas vacías y confirmación antes de eliminar.
+- Leer importes en COP con formato `es-CO` y fechas en formato local.
 
-El endpoint de salud responde:
+Los formularios validan los datos antes de enviarlos. Los errores se muestran en español sin detalles técnicos.
+
+El endpoint de salud sigue disponible en el backend y responde:
 
 ```json
 {
@@ -336,7 +340,7 @@ No uses los valores de ejemplo en producción.
 
 ## Solución de problemas
 
-### La interfaz muestra "API no disponible"
+### La interfaz muestra "No se pudieron cargar los datos"
 
 ```bash
 docker compose ps
@@ -394,5 +398,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`specs/002-api-ingresos/`](specs/002-api-ingresos/): especificación, plan y tareas de la API de ingresos.
 - [`specs/003-api-gastos/`](specs/003-api-gastos/): especificación, plan y tareas de la API de gastos.
 - [`specs/004-api-resumen/`](specs/004-api-resumen/): especificación, plan y tareas de la API de resumen.
+- [`specs/005-interfaz-mvp/`](specs/005-interfaz-mvp/): especificación, plan y tareas de la interfaz MVP.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.

@@ -23,7 +23,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 002 | [`002-api-ingresos`](002-api-ingresos/spec.md) ([plan](002-api-ingresos/plan.md), [tareas](002-api-ingresos/tasks.md)) | 1 | Modelo, migración y CRUD completo de ingresos | 001 | Validada (T-001 a T-008 completadas) |
 | 003 | [`003-api-gastos`](003-api-gastos/spec.md) ([plan](003-api-gastos/plan.md), [tareas](003-api-gastos/tasks.md)) | 1 | Modelo, migración y CRUD completo de gastos con tipo | 001, 002 | Validada (T-001 a T-008 completadas) |
 | 004 | [`004-api-resumen`](004-api-resumen/spec.md) ([plan](004-api-resumen/plan.md), [tareas](004-api-resumen/tasks.md)) | 2 | Totales de ingresos y gastos, balance y desglose por tipo | 002, 003 | Validada (T-001 a T-004 completadas) |
-| 005 | [`005-interfaz-mvp`](005-interfaz-mvp/spec.md) ([plan](005-interfaz-mvp/plan.md), [tareas](005-interfaz-mvp/tasks.md)) | 3 | Formularios, listados, edición, eliminación, totales y estados de UI | 002, 003, 004 | En implementación (T-001 a T-004 completadas) |
+| 005 | [`005-interfaz-mvp`](005-interfaz-mvp/spec.md) ([plan](005-interfaz-mvp/plan.md), [tareas](005-interfaz-mvp/tasks.md)) | 3 | Formularios, listados, edición, eliminación, totales y estados de UI | 002, 003, 004 | Validada (T-001 a T-007 completadas) |
 | 006 | `006-entrega-docker` | 4 | Dockerfiles de producción, Nginx, prueba de humo y validación del MVP | 005 | Pendiente |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
@@ -52,6 +52,7 @@ Fuera del MVP:
 
 - Aplicación local de un solo usuario, sin autenticación.
 - Importes con `Decimal` en Python y `NUMERIC` en PostgreSQL; nunca `float`.
+- La interfaz muestra los importes en pesos colombianos (COP) con formato `es-CO`; la moneda es fija y no hay selector.
 - CRUD completo, incluida la edición, desde el inicio.
 - Vista mensual después del MVP.
 - Contrato externo en español: rutas, campos JSON, tablas y columnas.

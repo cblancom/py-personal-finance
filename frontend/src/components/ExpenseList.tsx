@@ -25,8 +25,8 @@ export function ExpenseList({
               <th>Fecha</th>
               <th>Descripción</th>
               <th>Tipo</th>
-              <th>Valor</th>
-              <th>Acciones</th>
+              <th className="amount">Valor</th>
+              <th className="actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -35,10 +35,11 @@ export function ExpenseList({
                 <td>{formatDate(expense.fecha)}</td>
                 <td>{expense.descripcion}</td>
                 <td>{expenseTypeLabel(expense.tipo)}</td>
-                <td>{formatMoney(expense.valor)}</td>
+                <td className="amount">{formatMoney(expense.valor)}</td>
                 <td className="movement-actions">
                   <button
                     type="button"
+                    className="button button--link"
                     onClick={() => onEdit(expense)}
                     aria-label={`Editar gasto ${expense.descripcion}`}
                   >
@@ -46,6 +47,7 @@ export function ExpenseList({
                   </button>
                   <button
                     type="button"
+                    className="button button--link"
                     onClick={() => onDelete(expense)}
                     aria-label={`Eliminar gasto ${expense.descripcion}`}
                   >

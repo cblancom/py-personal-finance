@@ -82,7 +82,11 @@ export function IncomeForm({
       )}
 
       <div className="form-actions">
-        <button type="submit" disabled={submitting}>
+        <button
+          type="submit"
+          className="button button--primary"
+          disabled={submitting}
+        >
           {submitting
             ? 'Guardando...'
             : isEditing
@@ -90,7 +94,12 @@ export function IncomeForm({
               : 'Guardar ingreso'}
         </button>
         {isEditing && onCancelEdit && (
-          <button type="button" onClick={onCancelEdit} disabled={submitting}>
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={onCancelEdit}
+            disabled={submitting}
+          >
             Cancelar edición
           </button>
         )}

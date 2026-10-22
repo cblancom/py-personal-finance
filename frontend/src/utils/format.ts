@@ -1,6 +1,8 @@
 import type { ExpenseType } from '../types/expense'
 
 const moneyFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
