@@ -91,7 +91,7 @@ T-001 y T-002 pueden ejecutarse en paralelo después de aprobar el plan. T-003 i
   - Dependencias: T-005.
   - Descripción: actualizar README, AGENTS y `specs/README.md` con el flujo de producción, variables, puerto `3001`, comandos de estado y logs, migraciones, persistencia, respaldo/restauración y diferencias con desarrollo. Mantener la advertencia sobre `down -v` y la ausencia de exposición externa.
   - Hecho cuando: los comandos documentados coinciden con los archivos reales; se explica cómo crear `.env.production`; se distingue desarrollo de producción; el índice SDD refleja el estado.
-  - Evidencia (2026-10-21): README incorpora la sección “Entrega de producción local” con preparación de `.env.production`, variables, build, salud, logs, detención, diferencias con desarrollo, migraciones y respaldo/restauración. AGENTS añade los comandos de producción y la verificación específica; `specs/README.md` refleja T-001 a T-006. Los comandos documentados usan `compose.prod.yaml`, `--env-file .env.production`, `WEB_PORT=3001` y `scripts/smoke.sh`.
+  - Evidencia (2026-10-21): README incorpora la sección “Entrega de producción local” con preparación de `.env.production`, variables, build, salud, logs, detención, diferencias con desarrollo, migraciones y respaldo/restauración. También separa los servicios de desarrollo (API y OpenAPI en `8000`, PostgreSQL en `5433`) de los de producción (solo web en `3001`, OpenAPI no disponible). AGENTS añade los comandos de producción y la verificación específica; `specs/README.md` refleja T-001 a T-006. Los comandos documentados usan `compose.prod.yaml`, `--env-file .env.production`, `WEB_PORT=3001` y `scripts/smoke.sh`.
   - Verificación:
     ```bash
     grep -n 'compose.prod.yaml' README.md AGENTS.md
@@ -168,7 +168,7 @@ Se completa durante T-007.
 | AC-011 | Cumple | API UID `10001`, web UID `101`; imágenes sin `.env`; logs sin contraseña ni `DATABASE_URL`. |
 | AC-012 | Cumple | `scripts/smoke.sh` pasa con la entrega sana y falla con web detenida. |
 | AC-013 | Cumple | Frontend 50/50, lint, typecheck y build; backend 63 unitarias y 135/135 en Docker. |
-| AC-014 | Cumple | README, AGENTS y `specs/README.md` reflejan comandos, puerto y estado. |
+| AC-014 | Cumple | README, AGENTS y `specs/README.md` reflejan comandos, puerto, estado y disponibilidad de OpenAPI solo en desarrollo. |
 
 ## Notas
 

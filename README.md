@@ -29,7 +29,7 @@ Para desarrollo local sin contenedores para la API o la interfaz:
 - Python 3.13 y `uv`.
 - Node.js 20 y `npm`.
 
-## Inicio rápido con Docker
+## Desarrollo con Docker
 
 ```bash
 cp .env.example .env
@@ -39,7 +39,9 @@ docker compose ps
 
 Los tres servicios deben aparecer como `healthy`.
 
-Servicios disponibles:
+Este flujo usa `compose.yaml` y publica la API, OpenAPI y PostgreSQL en localhost. No lo ejecutes mientras la entrega de producción está levantada: ambos usan el puerto `3001`.
+
+Servicios disponibles en desarrollo:
 
 | Servicio | URL |
 |---|---|
@@ -49,7 +51,7 @@ Servicios disponibles:
 | Salud de la API | http://localhost:8000/api/health |
 | PostgreSQL | `localhost:5433` (solo localhost) |
 
-La base de datos solo se publica en `127.0.0.1` para desarrollo.
+OpenAPI, el puerto `8000` de la API y el puerto `5433` de PostgreSQL existen solo en desarrollo. En producción, la API se consulta a través de Nginx en `http://127.0.0.1:3001/api/...` y OpenAPI no se publica.
 
 Para detener los servicios sin borrar datos:
 
@@ -62,6 +64,19 @@ docker compose down
 ## Entrega de producción local
 
 La entrega de producción usa `compose.prod.yaml`: compila el frontend, lo sirve con Nginx y publica únicamente la web en `127.0.0.1:3001`. La API y PostgreSQL quedan dentro de la red de Docker.
+
+Servicios disponibles en producción:
+
+| Servicio | URL |
+|---|---|
+| Interfaz web | http://127.0.0.1:3001 |
+| API a través de Nginx | http://127.0.0.1:3001/api/... |
+| Salud de Nginx | http://127.0.0.1:3001/healthz |
+| Salud de la API | http://127.0.0.1:3001/api/health |
+| OpenAPI | No disponible en producción |
+| PostgreSQL | No publicado en el host |
+
+OpenAPI se publica solo en desarrollo. En producción, `/docs` y `/openapi.json` no se reenvían a la API; la ruta `/docs` en el puerto `3001` devuelve la aplicación React por el fallback SPA, no la documentación.
 
 ### Preparar el entorno
 
@@ -154,7 +169,7 @@ La interfaz de una sola página permite:
 
 Los formularios validan los datos antes de enviarlos. Los errores se muestran en español sin detalles técnicos.
 
-El endpoint de salud sigue disponible en el backend y responde:
+El endpoint de salud responde:
 
 ```json
 {
@@ -163,11 +178,11 @@ El endpoint de salud sigue disponible en el backend y responde:
 }
 ```
 
-Si PostgreSQL no está disponible, responde `503` con `status: degraded` y `database: unavailable`.
+En desarrollo está en `http://localhost:8000/api/health`; en producción se consulta a través de Nginx en `http://127.0.0.1:3001/api/health`. Si PostgreSQL no está disponible, responde `503` con `status: degraded` y `database: unavailable`.
 
 ## API de ingresos
 
-Base: `/api/ingresos`. La documentación interactiva está en `/docs`.
+Base: `/api/ingresos`. En desarrollo se usa `http://localhost:8000/api/ingresos`; en producción, `http://127.0.0.1:3001/api/ingresos`. La documentación interactiva `/docs` está disponible solo en desarrollo.
 
 | Método | Ruta | Resultado |
 |---|---|---|
@@ -176,6 +191,8 @@ Base: `/api/ingresos`. La documentación interactiva está en `/docs`.
 | `GET` | `/api/ingresos/{income_id}` | `200` o `404` |
 | `PUT` | `/api/ingresos/{income_id}` | `200` con reemplazo completo, `404` o `422` |
 | `DELETE` | `/api/ingresos/{income_id}` | `204`, `404` |
+
+Los ejemplos usan la API de desarrollo. En producción, reemplaza `http://localhost:8000` por `http://127.0.0.1:3001`.
 
 Ejemplo de creación:
 
@@ -200,7 +217,7 @@ Respuesta:
 
 ## API de gastos
 
-Base: `/api/gastos`. La documentación interactiva está en `/docs`.
+Base: `/api/gastos`. En desarrollo se usa `http://localhost:8000/api/gastos`; en producción, `http://127.0.0.1:3001/api/gastos`. La documentación interactiva `/docs` está disponible solo en desarrollo.
 
 | Método | Ruta | Resultado |
 |---|---|---|
@@ -215,6 +232,8 @@ Valores válidos de `tipo`:
 - `NECESARIO`
 - `NO_NECESARIO`
 - `INVERSION`
+
+Los ejemplos usan la API de desarrollo. En producción, reemplaza `http://localhost:8000` por `http://127.0.0.1:3001`.
 
 Ejemplo de creación:
 
@@ -240,7 +259,7 @@ Respuesta:
 
 ## API de resumen
 
-`GET /api/resumen` devuelve los totales globales, el balance y el desglose de gastos por tipo. No acepta parámetros ni filtros.
+`GET /api/resumen` devuelve los totales globales, el balance y el desglose de gastos por tipo. No acepta parámetros ni filtros. En desarrollo se consulta en `http://localhost:8000/api/resumen`; en producción, en `http://127.0.0.1:3001/api/resumen`.
 
 ```json
 {
@@ -420,7 +439,7 @@ cat respaldo.sql | docker compose --env-file .env.production -f compose.prod.yam
 | `TEST_DATABASE_URL` | URL a `localhost:5433/personal_finance_test` | Base aislada para pruebas de integración; se crea automáticamente |
 | `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Proxy de Vite; Compose usa `http://api:8000` |
 
-No uses los valores de ejemplo en producción.
+No uses los valores de ejemplo en producción. La entrega de producción usa `.env.production`; consulta la sección “Entrega de producción local”.
 
 ## Estructura
 
@@ -466,7 +485,18 @@ docker compose --env-file .env.production -f compose.prod.yaml config -q
 
 Comprueba que el entorno de desarrollo esté detenido y que `POSTGRES_PASSWORD` y `DATABASE_URL` estén definidos. Si `migrate` falla, la API no arranca por diseño.
 
-### La interfaz muestra "No se pudieron cargar los datos"
+### OpenAPI no funciona en producción
+
+Es esperado. La documentación OpenAPI está disponible solo en desarrollo. Para consultarla, detén producción y levanta el Compose de desarrollo:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml down
+docker compose up -d
+```
+
+Después abre `http://localhost:8000/docs`. En producción, `/docs` en el puerto `3001` devuelve la aplicación React, no OpenAPI.
+
+### La interfaz muestra "No se pudieron cargar los datos" en desarrollo
 
 ```bash
 docker compose ps
@@ -476,13 +506,17 @@ docker compose logs api
 
 Si PostgreSQL está detenido, la API responde `503`; es el comportamiento esperado.
 
+En producción, usa `http://127.0.0.1:3001/api/health` y revisa los logs de `api` y `web` con `compose.prod.yaml`.
+
 ### Un puerto está ocupado
 
-Cambia `API_PORT`, `WEB_PORT` o `DB_PORT` en `.env` y vuelve a levantar:
+En desarrollo, cambia `API_PORT`, `WEB_PORT` o `DB_PORT` en `.env` y vuelve a levantar:
 
 ```bash
 docker compose up -d
 ```
+
+En producción, cambia `WEB_PORT` en `.env.production` y vuelve a levantar el Compose de producción.
 
 ### El backend local indica que falta `DATABASE_URL`
 
