@@ -26,3 +26,7 @@ coverage/
 # Logs y sistema
 *.log
 .DS_Store
+
+# Skills locales de agentes
+/.agents/skills/frontend-design/
+/skills-lock.json
