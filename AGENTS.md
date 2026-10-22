@@ -19,7 +19,7 @@ Stack:
 
 ## 2. Estado actual
 
-La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). Las APIs de ingresos (`specs/002-api-ingresos/`) y gastos (`specs/003-api-gastos/`) están implementadas y validadas (T-001 a T-008 en cada una), la API de resumen (`specs/004-api-resumen/`) está implementada y validada (T-001 a T-004), y la interfaz MVP (`specs/005-interfaz-mvp/`) está implementada y validada (T-001 a T-007). El backend, el frontend y el entorno Docker de desarrollo están operativos. La especificación 006 (entrega Docker de producción) está pendiente. El estado detallado vive en los `tasks.md` de cada especificación.
+La Fase 0 (`specs/001-fundaciones/`) está implementada y validada (T-001 a T-012). Las APIs de ingresos (`specs/002-api-ingresos/`) y gastos (`specs/003-api-gastos/`) están implementadas y validadas (T-001 a T-008 en cada una), la API de resumen (`specs/004-api-resumen/`) está implementada y validada (T-001 a T-004), y la interfaz MVP (`specs/005-interfaz-mvp/`) está implementada y validada (T-001 a T-007). El backend, el frontend y el entorno Docker de desarrollo están operativos. La entrega Docker de producción (`specs/006-entrega-docker/`) está implementada y validada (T-001 a T-007). El estado detallado vive en los `tasks.md` de cada especificación.
 
 ## 3. Estructura objetivo
 
@@ -29,7 +29,9 @@ project-root/
 ├── constitution.md
 ├── README.md
 ├── compose.yaml
+├── compose.prod.yaml
 ├── .env.example
+├── .env.production.example
 ├── .dockerignore
 ├── specs/
 │   ├── README.md
@@ -49,7 +51,11 @@ project-root/
 │   │   ├── spec.md
 │   │   ├── plan.md
 │   │   └── tasks.md
-│   └── 005-interfaz-mvp/
+│   ├── 005-interfaz-mvp/
+│   │   ├── spec.md
+│   │   ├── plan.md
+│   │   └── tasks.md
+│   └── 006-entrega-docker/
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks.md
@@ -77,6 +83,8 @@ project-root/
 │   │   └── utils/
 │   ├── package.json
 │   └── package-lock.json
+├── scripts/
+│   └── smoke.sh
 └── docker/
     ├── Dockerfile.api
     ├── Dockerfile.web
@@ -137,7 +145,22 @@ docker compose exec api uv run alembic upgrade head
 docker compose exec db psql -U postgres -d personal_finance
 ```
 
+Producción local (detén desarrollo primero; ambos usan `3001`):
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+docker compose --env-file .env.production -f compose.prod.yaml ps
+docker compose --env-file .env.production -f compose.prod.yaml logs -f
+docker compose --env-file .env.production -f compose.prod.yaml run --rm migrate
+docker compose --env-file .env.production -f compose.prod.yaml down
+WEB_PORT=3001 ./scripts/smoke.sh
+```
+
+`down -v` elimina el volumen de producción y requiere autorización explícita.
+
 ### Verificación mínima antes de terminar una tarea
+
+Con el Compose de desarrollo levantado:
 
 ```bash
 (cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest)
@@ -146,6 +169,13 @@ docker compose exec api uv run pytest
 ```
 
 No se declara una tarea terminada si alguno de estos comandos falla y el fallo está relacionado con el cambio.
+
+Para validar explícitamente la entrega de producción, con el Compose de producción levantado:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml config -q
+WEB_PORT=3001 ./scripts/smoke.sh
+```
 
 ## 6. Convenciones
 

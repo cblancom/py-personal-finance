@@ -8,7 +8,7 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, consultar el resumen y muestra los importes en pesos colombianos (COP). La especificación 006 (entrega Docker de producción) está pendiente.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -58,6 +58,89 @@ docker compose down
 ```
 
 `docker compose down -v` elimina el volumen de PostgreSQL y requiere autorización explícita.
+
+## Entrega de producción local
+
+La entrega de producción usa `compose.prod.yaml`: compila el frontend, lo sirve con Nginx y publica únicamente la web en `127.0.0.1:3001`. La API y PostgreSQL quedan dentro de la red de Docker.
+
+### Preparar el entorno
+
+Detén primero el entorno de desarrollo, porque ambos usan el puerto `3001`:
+
+```bash
+docker compose down
+```
+
+Crea el archivo de producción a partir de la plantilla y cambia la contraseña:
+
+```bash
+cp -n .env.production.example .env.production
+chmod 600 .env.production
+```
+
+`.env.production` está ignorado por Git. `DATABASE_URL` debe usar la misma contraseña que `POSTGRES_PASSWORD`; si contiene caracteres especiales, codifícalos en la URL. Los valores de ejemplo no sirven para uso real.
+
+| Variable | Obligatoria | Uso |
+|---|---|---|
+| `POSTGRES_DB` | No; por defecto `personal_finance` | Nombre de la base de datos |
+| `POSTGRES_USER` | No; por defecto `personal_finance` | Usuario de PostgreSQL |
+| `POSTGRES_PASSWORD` | Sí | Contraseña de PostgreSQL; no uses el valor de ejemplo |
+| `DATABASE_URL` | Sí | URL interna `postgresql+psycopg://...@db:5432/...` |
+| `WEB_PORT` | No; por defecto `3001` | Puerto publicado solo en `127.0.0.1` |
+
+### Construir y arrancar
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+docker compose --env-file .env.production -f compose.prod.yaml ps
+```
+
+El servicio `migrate` aplica Alembic y termina antes de que arranque `api`. Si falla, la API no arranca.
+
+Comprobaciones:
+
+```bash
+curl -fsS http://127.0.0.1:3001/healthz
+curl -fsS http://127.0.0.1:3001/api/health
+WEB_PORT=3001 ./scripts/smoke.sh
+```
+
+La prueba de humo comprueba la web, Nginx, el proxy de la API, el resumen y el fallback SPA sin modificar datos.
+
+### Estado y logs
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml ps
+docker compose --env-file .env.production -f compose.prod.yaml logs -f
+```
+
+### Detener y reiniciar
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml down
+docker compose --env-file .env.production -f compose.prod.yaml up -d
+```
+
+`down` conserva el volumen. No uses `down -v` salvo que quieras borrar los datos y tengas autorización explícita.
+
+Para volver al entorno de desarrollo, detén producción y vuelve a levantar el Compose de desarrollo:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml down
+docker compose up -d
+```
+
+### Diferencias con desarrollo
+
+| Desarrollo | Producción local |
+|---|---|
+| `compose.yaml` | `compose.prod.yaml` |
+| Vite con recarga y código montado | Nginx con frontend compilado |
+| API con `--reload` y dependencias de prueba | API sin recarga y solo dependencias de ejecución |
+| Web `3001`, API `8000` y PostgreSQL `5433` en localhost | Solo web `3001` en `127.0.0.1` |
+| Migraciones manuales | Servicio `migrate` antes de la API |
+
+La entrega es local y no debe exponerse a Internet ni a la LAN. TLS y autenticación quedan fuera del alcance.
 
 ## Uso actual
 
@@ -268,12 +351,19 @@ Las pruebas del frontend simulan `fetch`; no requieren la API en ejecución.
 
 Alembic es la única vía para modificar el esquema. La revisión base `0001` no crea tablas de dominio; solo registra la versión en `alembic_version`.
 
-Con Docker Compose:
+Con Docker Compose de desarrollo:
 
 ```bash
 docker compose exec api uv run alembic upgrade head
 docker compose exec api uv run alembic current
 docker compose exec api uv run alembic downgrade -1
+```
+
+En producción, el servicio `migrate` ejecuta `alembic upgrade head` antes de arrancar la API. Para volver a aplicarlo o consultar la revisión actual:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml run --rm migrate
+docker compose --env-file .env.production -f compose.prod.yaml exec -T api alembic current
 ```
 
 Para crear una migración después de modificar modelos:
@@ -293,6 +383,26 @@ uv run --env-file ../.env alembic upgrade head
 ```
 
 No se usa `Base.metadata.create_all()`.
+
+## Respaldo de producción
+
+La entrega de producción conserva los datos en el volumen `py-personal-finance-prod_postgres_data`.
+
+Respaldo manual:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml exec -T db \
+  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' > respaldo.sql
+```
+
+La restauración se hace en un entorno controlado y con la API detenida:
+
+```bash
+cat respaldo.sql | docker compose --env-file .env.production -f compose.prod.yaml exec -T db \
+  sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+`docker compose --env-file .env.production -f compose.prod.yaml down` conserva el volumen. `down -v` elimina los datos y requiere autorización explícita.
 
 ## Variables de entorno
 
@@ -327,10 +437,16 @@ No uses los valores de ejemplo en producción.
 │   ├── package.json
 │   └── package-lock.json
 ├── docker/
-│   └── Dockerfile.api
+│   ├── Dockerfile.api
+│   ├── Dockerfile.web
+│   └── nginx.conf
+├── scripts/
+│   └── smoke.sh
 ├── specs/                  # Especificaciones SDD
 ├── compose.yaml
+├── compose.prod.yaml
 ├── .env.example
+├── .env.production.example
 ├── .dockerignore
 ├── constitution.md
 └── AGENTS.md
@@ -339,6 +455,16 @@ No uses los valores de ejemplo en producción.
 `legacy/` contiene una implementación anterior y está fuera de alcance.
 
 ## Solución de problemas
+
+### La entrega de producción no arranca
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml ps -a
+docker compose --env-file .env.production -f compose.prod.yaml logs migrate api web
+docker compose --env-file .env.production -f compose.prod.yaml config -q
+```
+
+Comprueba que el entorno de desarrollo esté detenido y que `POSTGRES_PASSWORD` y `DATABASE_URL` estén definidos. Si `migrate` falla, la API no arranca por diseño.
 
 ### La interfaz muestra "No se pudieron cargar los datos"
 
@@ -399,5 +525,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`specs/003-api-gastos/`](specs/003-api-gastos/): especificación, plan y tareas de la API de gastos.
 - [`specs/004-api-resumen/`](specs/004-api-resumen/): especificación, plan y tareas de la API de resumen.
 - [`specs/005-interfaz-mvp/`](specs/005-interfaz-mvp/): especificación, plan y tareas de la interfaz MVP.
+- [`specs/006-entrega-docker/`](specs/006-entrega-docker/): especificación, plan y tareas de la entrega Docker.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.

@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      target: dev
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-personal_finance}
       TEST_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/personal_finance_test
