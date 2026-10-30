@@ -21,4 +21,5 @@ class Income(Base):
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True, autoincrement=True)
     date: Mapped[DateType] = mapped_column("fecha", Date, nullable=False)
     description: Mapped[str] = mapped_column("descripcion", String(200), nullable=False)
+    category: Mapped[str | None] = mapped_column("categoria", String(100), nullable=True)
     amount: Mapped[Decimal] = mapped_column("valor", Numeric(12, 2), nullable=False)

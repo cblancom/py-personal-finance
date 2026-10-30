@@ -16,6 +16,7 @@ def to_income_read(income: Income) -> IncomeRead:
         id=income.id,
         fecha=income.date,
         descripcion=income.description,
+        categoria=income.category,
         valor=income.amount,
     )
 
@@ -38,6 +39,7 @@ def create_income(
     income = Income(
         date=payload.fecha,
         description=payload.descripcion,
+        category=payload.categoria,
         amount=payload.valor,
     )
     db.add(income)
@@ -69,6 +71,7 @@ def update_income(
     income = get_income_or_404(db, income_id)
     income.date = payload.fecha
     income.description = payload.descripcion
+    income.category = payload.categoria
     income.amount = payload.valor
     db.commit()
     db.refresh(income)

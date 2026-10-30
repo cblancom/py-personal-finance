@@ -22,6 +22,7 @@ def test_create_accepts_valid_payload():
 
     assert income.fecha == date(2026, 10, 21)
     assert income.descripcion == "Salario"
+    assert income.categoria is None
     assert income.valor == Decimal("1500.50")
 
 
@@ -29,6 +30,23 @@ def test_create_trims_description():
     income = IncomeCreate.model_validate(payload(descripcion="  Salario  "))
 
     assert income.descripcion == "Salario"
+
+
+def test_create_accepts_optional_category():
+    income = IncomeCreate.model_validate(payload(categoria="  Salario  "))
+
+    assert income.categoria == "Salario"
+
+
+def test_create_normalizes_blank_category():
+    income = IncomeCreate.model_validate(payload(categoria="   "))
+
+    assert income.categoria is None
+
+
+def test_create_rejects_long_category():
+    with pytest.raises(ValidationError):
+        IncomeCreate.model_validate(payload(categoria="x" * 101))
 
 
 def test_create_accepts_numeric_amount():
@@ -91,6 +109,7 @@ def test_read_serializes_decimal_as_string():
         "id": 1,
         "fecha": "2026-10-21",
         "descripcion": "Salario",
+        "categoria": None,
         "valor": "1500.50",
     }
 

@@ -10,6 +10,7 @@ import {
 const payload: IncomePayload = {
   fecha: '2026-10-21',
   descripcion: 'Salario',
+  categoria: null,
   valor: '1000.00',
 }
 

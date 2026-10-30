@@ -2,6 +2,7 @@ export interface Income {
   id: number
   fecha: string
   descripcion: string
+  categoria: string | null
   valor: string
 }
 

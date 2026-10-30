@@ -7,6 +7,7 @@ const income: Income = {
   id: 1,
   fecha: '2026-10-21',
   descripcion: 'Salario',
+  categoria: 'Nómina',
   valor: '1500.50',
 }
 
@@ -20,6 +21,7 @@ describe('IncomeList', () => {
 
     expect(screen.getByText('21/10/2026')).toBeInTheDocument()
     expect(screen.getByText('Salario')).toBeInTheDocument()
+    expect(screen.getByText('Nómina')).toBeInTheDocument()
     expect(screen.getByText('$ 1.500,50')).toBeInTheDocument()
 
     fireEvent.click(

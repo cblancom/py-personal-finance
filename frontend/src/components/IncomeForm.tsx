@@ -19,6 +19,7 @@ export function IncomeForm({
   const isEditing = initial !== null
   const [fecha, setFecha] = useState(initial?.fecha ?? todayIsoDate())
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '')
+  const [categoria, setCategoria] = useState(initial?.categoria ?? '')
   const [valor, setValor] = useState(initial?.valor ?? '')
   const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +33,12 @@ export function IncomeForm({
     }
 
     setError(null)
-    onSubmit({ fecha, descripcion: descripcion.trim(), valor })
+    onSubmit({
+      fecha,
+      descripcion: descripcion.trim(),
+      categoria: categoria.trim() || null,
+      valor,
+    })
   }
 
   return (
@@ -58,6 +64,18 @@ export function IncomeForm({
           maxLength={200}
           value={descripcion}
           onChange={(event) => setDescripcion(event.target.value)}
+          disabled={submitting}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="income-categoria">Categoría (opcional)</label>
+        <input
+          id="income-categoria"
+          type="text"
+          maxLength={100}
+          value={categoria}
+          onChange={(event) => setCategoria(event.target.value)}
           disabled={submitting}
         />
       </div>

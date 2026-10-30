@@ -560,5 +560,6 @@ Evita `docker compose down -v` salvo que quieras borrar el volumen. `docker comp
 - [`specs/004-api-resumen/`](specs/004-api-resumen/): especificación, plan y tareas de la API de resumen.
 - [`specs/005-interfaz-mvp/`](specs/005-interfaz-mvp/): especificación, plan y tareas de la interfaz MVP.
 - [`specs/006-entrega-docker/`](specs/006-entrega-docker/): especificación, plan y tareas de la entrega Docker.
+- [`specs/007-importacion-movimientos/`](specs/007-importacion-movimientos/): especificación, plan y tareas de la importación desde Excel/CSV.
 
 El flujo es: especificación → clarificación → plan → tareas → implementación → validación.

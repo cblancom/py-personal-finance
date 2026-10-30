@@ -46,6 +46,7 @@ const income: Income = {
   id: 1,
   fecha: '2026-10-21',
   descripcion: 'Salario',
+  categoria: null,
   valor: '750.00',
 }
 
@@ -157,6 +158,7 @@ describe('App', () => {
       id: 2,
       fecha: '2026-10-22',
       descripcion: 'Consultoría',
+      categoria: null,
       valor: '1500.50',
     }
     const updatedSummary: Summary = {

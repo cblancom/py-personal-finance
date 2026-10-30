@@ -19,6 +19,7 @@ PAYLOAD = {
 UPDATED_PAYLOAD = {
     "fecha": "2026-11-01",
     "descripcion": "Salario ajustado",
+    "categoria": "Salario",
     "valor": "1750.75",
 }
 
@@ -31,8 +32,19 @@ def test_create_income(client: TestClient):
         "id": 1,
         "fecha": "2026-10-21",
         "descripcion": "Salario",
+        "categoria": None,
         "valor": "1500.50",
     }
+
+
+def test_create_income_with_category(client: TestClient):
+    response = client.post(
+        "/api/ingresos",
+        json={**PAYLOAD, "categoria": "  Salario  "},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["categoria"] == "Salario"
 
 
 def test_list_incomes_returns_empty_list(client: TestClient):

@@ -7,6 +7,7 @@ const income: Income = {
   id: 1,
   fecha: '2026-10-21',
   descripcion: 'Salario',
+  categoria: 'Salario',
   valor: '1000.00',
 }
 
@@ -26,8 +27,29 @@ describe('IncomeForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       fecha: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       descripcion: 'Salario',
+      categoria: null,
       valor: '1500.50',
     })
+  })
+
+  it('submits an optional category with surrounding whitespace trimmed', () => {
+    const onSubmit = vi.fn()
+    render(<IncomeForm submitting={false} onSubmit={onSubmit} />)
+
+    fireEvent.change(screen.getByLabelText('Descripción'), {
+      target: { value: 'Salario' },
+    })
+    fireEvent.change(screen.getByLabelText('Categoría (opcional)'), {
+      target: { value: '  Nómina  ' },
+    })
+    fireEvent.change(screen.getByLabelText('Valor'), {
+      target: { value: '1500.50' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar ingreso' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ categoria: 'Nómina' }),
+    )
   })
 
   it('shows validation errors and does not submit invalid data', () => {
@@ -88,6 +110,9 @@ describe('IncomeForm', () => {
     expect(screen.getByLabelText('Fecha')).toHaveValue(income.fecha)
     expect(screen.getByLabelText('Descripción')).toHaveValue(
       income.descripcion,
+    )
+    expect(screen.getByLabelText('Categoría (opcional)')).toHaveValue(
+      income.categoria,
     )
     expect(screen.getByLabelText('Valor')).toHaveValue(Number(income.valor))
     expect(
