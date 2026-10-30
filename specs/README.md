@@ -25,7 +25,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 004 | [`004-api-resumen`](004-api-resumen/spec.md) ([plan](004-api-resumen/plan.md), [tareas](004-api-resumen/tasks.md)) | 2 | Totales de ingresos y gastos, balance y desglose por tipo | 002, 003 | Validada (T-001 a T-004 completadas) |
 | 005 | [`005-interfaz-mvp`](005-interfaz-mvp/spec.md) ([plan](005-interfaz-mvp/plan.md), [tareas](005-interfaz-mvp/tasks.md)) | 3 | Formularios, listados, edición, eliminación, totales y estados de UI | 002, 003, 004 | Validada (T-001 a T-007 completadas) |
 | 006 | [`006-entrega-docker`](006-entrega-docker/spec.md) ([plan](006-entrega-docker/plan.md), [tareas](006-entrega-docker/tasks.md)) | 4 | Dockerfiles de producción, Nginx, prueba de humo y validación del MVP | 005 | Validada (T-001 a T-007 completadas) |
-| 007 | [`007-importacion-movimientos`](007-importacion-movimientos/spec.md) ([plan](007-importacion-movimientos/plan.md), [tareas](007-importacion-movimientos/tasks.md)) | 5 | Importación de ingresos y gastos desde Excel/CSV, staging persistente, corrección manual y control de pendientes | 002, 003, 004, 005 | En implementación (T-001 a T-003 completadas) |
+| 007 | [`007-importacion-movimientos`](007-importacion-movimientos/spec.md) ([plan](007-importacion-movimientos/plan.md), [tareas](007-importacion-movimientos/tasks.md)) | 5 | Importación de ingresos y gastos desde Excel/CSV, staging persistente, corrección manual y control de pendientes | 002, 003, 004, 005 | En implementación (T-001 a T-005 completadas) |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
 

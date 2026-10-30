@@ -9,7 +9,8 @@
 ```text
 T-001 ──► T-002
   ├──► T-003 ──► T-004
-  └──► T-013 ──► T-005
+  ├──► T-003 ──► T-005
+  └──► T-013
 T-002 + T-004 + T-005 + T-013 ──► T-006 ──► T-007 ──► T-008
 T-008 ──► T-009 ──► T-010 ──┐
                     └──► T-011 ──┴──► T-012
@@ -18,7 +19,7 @@ T-009 a T-012 ──► T-015
 T-014 + T-015 ──► T-016
 ```
 
-T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara dependencias y el límite de subida. T-004 y T-005 pueden ejecutarse en paralelo una vez listos T-003 y T-013. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cierra la especificación.
+T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara dependencias y el límite de subida. T-004 y T-005 pueden ejecutarse en paralelo una vez listo T-003. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cierra la especificación.
 
 Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
 
@@ -67,12 +68,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff check .
     ```
 
-- [ ] **T-004 — Implementar el parser CSV**
+- [x] **T-004 — Implementar el parser CSV**
   - Requisitos: FR-001, FR-002, FR-003, FR-015, FR-016.
   - Dependencias: T-003.
   - Descripción: parsear CSV con `utf-8-sig`, detectar delimitador coma/punto y coma, validar cabeceras, conservar números de fila, omitir filas vacías y rechazar archivos vacíos, codificaciones no soportadas o cabeceras faltantes. No leer el archivo completo sin límite.
   - Hecho cuando: CSV válidos producen filas normalizadas; archivos inválidos producen errores de archivo; se respetan límites; pruebas unitarias pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creado `app/services/imports/csv_parser.py`; soporta UTF-8 con BOM, delimitadores coma/punto y coma, alias de cabecera, filas vacías, números de fila originales y límites de tamaño/filas. 73 pruebas core; 207/207 pruebas backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -80,12 +81,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff check .
     ```
 
-- [ ] **T-005 — Implementar el parser XLSX**
+- [x] **T-005 — Implementar el parser XLSX**
   - Requisitos: FR-001, FR-002, FR-003, FR-015, FR-016.
-  - Dependencias: T-003, T-013.
-  - Descripción: usar `openpyxl` instalado en T-013 para leer la primera hoja en modo `read_only` y `data_only`, validar extensión y contenido, convertir fechas y números a tipos internos, omitir filas vacías y rechazar libros vacíos o con estructura inválida. No ejecutar macros ni fórmulas.
+  - Dependencias: T-003.
+  - Descripción: usar `openpyxl` para leer la primera hoja en modo `read_only` y `data_only`, validar extensión y contenido, convertir fechas y números a tipos internos, omitir filas vacías y rechazar libros vacíos o con estructura inválida. No ejecutar macros ni fórmulas.
   - Hecho cuando: XLSX válidos producen filas normalizadas; archivos inválidos se rechazan; no se usan `float` para cálculos; pruebas unitarias pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creado `app/services/imports/xlsx_parser.py`; añadido `openpyxl` 3.1.5; lee la primera hoja en `read_only`/`data_only`, conserva fechas y números, omite filas vacías y aplica límites. 73 pruebas core; 207/207 pruebas backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -193,7 +194,7 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
 - [ ] **T-013 — Ajustar dependencias y límite de subida**
   - Requisitos: FR-016, NFR-004, NFR-009.
   - Dependencias: T-001.
-  - Descripción: añadir `python-multipart` y `openpyxl` al grupo de dependencias de ejecución, fijar versiones y actualizar `uv.lock`. Añadir `client_max_body_size 12m` en `docker/nginx.conf`. Reconstruir las imágenes de desarrollo y producción y verificar que las dependencias están disponibles en runtime.
+  - Descripción: añadir `python-multipart` al grupo de dependencias de ejecución, fijar su versión y actualizar `uv.lock`; `openpyxl` ya quedó incorporado en T-005. Añadir `client_max_body_size 12m` en `docker/nginx.conf`. Reconstruir las imágenes de desarrollo y producción y verificar que las dependencias están disponibles en runtime.
   - Hecho cuando: las dependencias están en producción; el lock está actualizado; Nginx acepta el tamaño previsto; el backend rechaza archivos que superan su límite; las imágenes construyen.
   - Evidencia (pendiente):
   - Verificación:
