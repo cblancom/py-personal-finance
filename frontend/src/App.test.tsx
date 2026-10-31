@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listExpenses } from './api/expenses'
+import { countPending, listPending } from './api/imports'
 import { createIncome, listIncomes } from './api/incomes'
 import { getSummary } from './api/summary'
 import type { Expense } from './types/expense'
@@ -26,7 +27,18 @@ vi.mock('./api/summary', () => ({
   getSummary: vi.fn(),
 }))
 
+vi.mock('./api/imports', () => ({
+  countPending: vi.fn(),
+  listPending: vi.fn(),
+  uploadImport: vi.fn(),
+  updatePending: vi.fn(),
+  commitPending: vi.fn(),
+  discardPending: vi.fn(),
+}))
+
 const getSummaryMock = vi.mocked(getSummary)
+const countPendingMock = vi.mocked(countPending)
+const listPendingMock = vi.mocked(listPending)
 const listIncomesMock = vi.mocked(listIncomes)
 const listExpensesMock = vi.mocked(listExpenses)
 const createIncomeMock = vi.mocked(createIncome)
@@ -63,6 +75,8 @@ beforeEach(() => {
   getSummaryMock.mockResolvedValue(summary)
   listIncomesMock.mockResolvedValue([income])
   listExpensesMock.mockResolvedValue([expense])
+  countPendingMock.mockResolvedValue({ pendientes: 2 })
+  listPendingMock.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -90,6 +104,9 @@ describe('App', () => {
     expect(
       screen.getByRole('tablist', { name: 'Movimientos' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Pendientes (2)' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('tabpanel')).toHaveAttribute(
       'aria-labelledby',
       'incomes-tab',
@@ -100,6 +117,43 @@ describe('App', () => {
     expect(getSummaryMock).toHaveBeenCalled()
     expect(listIncomesMock).toHaveBeenCalled()
     expect(listExpensesMock).toHaveBeenCalled()
+  })
+
+  it('navigates to import and pending views', async () => {
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'Resumen' })
+    fireEvent.click(screen.getByRole('button', { name: 'Importar' }))
+
+    expect(
+      screen.getByRole('heading', { name: 'Importar movimientos' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }))
+    await screen.findByRole('heading', { name: 'Resumen' })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Pendientes (2)' }),
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: 'Pendientes' }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('No hay registros pendientes.'),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the pending badge when there are no pending rows', async () => {
+    countPendingMock.mockResolvedValue({ pendientes: 0 })
+    const { container } = render(<App />)
+
+    await screen.findByRole('heading', { name: 'Resumen' })
+
+    expect(
+      screen.getByRole('button', { name: 'Pendientes' }),
+    ).toBeInTheDocument()
+    expect(container.querySelector('.pending-badge')).toBeNull()
   })
 
   it('shows loading while initial requests are pending', () => {

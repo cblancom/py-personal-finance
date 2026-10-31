@@ -176,12 +176,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-012 — Integrar navegación, badge y refresco en App**
+- [x] **T-012 — Integrar navegación, badge y refresco en App**
   - Requisitos: FR-012, FR-017.
   - Dependencias: T-010, T-011.
   - Descripción: añadir a `App` la navegación local entre principal, importación y pendientes; cargar el conteo de pendientes; mostrar botón `Importar` y `Pendientes` con indicador accesible; refrescar resumen, listas y conteo tras importar, contabilizar o descartar. Mantener las pestañas existentes.
   - Hecho cuando: se navega entre vistas sin router; el badge aparece solo con pendientes; se actualiza tras cada operación; las pruebas de App pasan; no se rompen ingresos, gastos ni resumen.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): `App` integra vistas principal, importación y pendientes; carga el conteo desde el backend; muestra badge accesible y lo oculta en cero; refresca datos y conteo tras importar, contabilizar o descartar. 68/68 frontend, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend
@@ -191,12 +191,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-013 — Configurar el límite de subida y validar las dependencias**
+- [x] **T-013 — Configurar el límite de subida y validar las dependencias**
   - Requisitos: FR-016, NFR-004, NFR-009.
   - Dependencias: T-001.
   - Descripción: añadir `client_max_body_size 12m` en `docker/nginx.conf`; `python-multipart` y `openpyxl` ya quedaron incorporados en T-006/T-005. Reconstruir las imágenes de desarrollo y producción y verificar que las dependencias están disponibles en runtime.
   - Hecho cuando: las dependencias están en producción; el lock está actualizado; Nginx acepta el tamaño previsto; el backend rechaza archivos que superan su límite; las imágenes construyen.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): `client_max_body_size 12m` añadido a Nginx; `nginx -t` pasa; imágenes dev y prod reconstruidas; la imagen prod importa `python-multipart 0.0.32` y `openpyxl 3.1.5`; prueba unitaria confirma `413` para contenido por encima del límite. 225/225 backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -317,7 +317,7 @@ Se completa durante T-016.
 - No se implementa nada en esta etapa; todos los checkboxes quedan pendientes.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 006.
-- `openpyxl` y `python-multipart` ya se incorporaron; T-013 queda para el límite de Nginx y la validación de imágenes.
+- `openpyxl` y `python-multipart` están incorporados; T-013 completó el límite de Nginx y la validación de imágenes.
 - La importación usa tablas de staging separadas de `ingresos` y `gastos`.
 - Los pendientes no participan en el resumen.
 - La decisión D-002 está aprobada: T-002 incluye una categoría opcional de ingresos.
