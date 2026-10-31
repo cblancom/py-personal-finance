@@ -132,12 +132,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     curl -X POST http://localhost:8000/api/importaciones/pendientes/1/contabilizar
     ```
 
-- [ ] **T-009 — Crear tipos y cliente API del frontend**
+- [x] **T-009 — Crear tipos y cliente API del frontend**
   - Requisitos: FR-017, NFR-008.
   - Dependencias: T-006, T-007, T-008.
   - Descripción: crear `types/import.ts` y `api/imports.ts` con tipos de lote, pendiente, errores, conteo y respuestas; funciones `uploadImport`, `listPending`, `countPending`, `updatePending`, `commitPending` y `discardPending`. Usar `request` y rutas relativas `/api`. Añadir pruebas del cliente con `fetch` simulado.
   - Hecho cuando: los tipos reflejan el contrato; cada función usa método, ruta y cuerpo correctos; `204` se maneja sin parsear JSON; pruebas del cliente pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creados `types/import.ts` y `api/imports.ts`; carga multipart, listado, conteo, actualización, contabilización y descarte con rutas relativas. 6 pruebas nuevas de cliente; 57/57 pruebas de frontend, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend
@@ -146,12 +146,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run typecheck
     ```
 
-- [ ] **T-010 — Crear la vista de importación**
+- [x] **T-010 — Crear la vista de importación**
   - Requisitos: FR-001, FR-017.
   - Dependencias: T-009.
   - Descripción: crear `ImportView` con selector de archivo, tipo ingreso/gasto, estado de carga, resumen del lote y errores accesibles. Aceptar solo `.csv` y `.xlsx`. Tras importar, notificar al contenedor para refrescar el resumen, las listas y el conteo. Incluir estado vacío y errores de red.
   - Hecho cuando: el usuario puede seleccionar y enviar un archivo; el resultado muestra importados y pendientes; los errores se muestran en español; la vista es accesible y responsive.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creados `ImportView` y sus estilos; selector de archivo y tipo, estado de envío, resumen del lote, errores por estado HTTP, aviso de pendientes y botón de regreso. 4 pruebas de componente; 61/61 frontend, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend
@@ -161,12 +161,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-011 — Crear la vista de pendientes**
+- [x] **T-011 — Crear la vista de pendientes**
   - Requisitos: FR-008, FR-009, FR-010, FR-011, FR-017.
   - Dependencias: T-009.
   - Descripción: crear `PendingView` con listado, campos editables, errores por campo, guardado, contabilización con confirmación cuando aplique y descarte con confirmación. Deshabilitar contabilizar mientras haya errores. Mostrar estado vacío y refrescar conteo/resumen.
   - Hecho cuando: un pendiente se corrige, guarda, contabiliza o descarta desde la UI; los errores son visibles; la tabla es responsive; pruebas de componentes pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creados `PendingView` y sus estilos; listado responsive, errores por fila, edición de fecha/descripción/valor/categoría/tipo, guardado, contabilización y descarte con confirmación. 5 pruebas de componente; 66/66 frontend, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend

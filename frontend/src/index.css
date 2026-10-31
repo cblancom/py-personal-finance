@@ -438,6 +438,143 @@ h3 {
   font-style: italic;
 }
 
+.view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.view-header h2 {
+  margin-bottom: 0.35rem;
+  font-size: 1.8rem;
+}
+
+.view-header p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-soft);
+}
+
+.import-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+  margin-bottom: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.import-form input[type="file"] {
+  width: 100%;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ink-soft);
+  color: var(--ink);
+}
+
+.import-form input[type="file"]:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.import-result {
+  max-width: 42rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.import-result h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.import-result p {
+  margin-bottom: 1rem;
+  color: var(--ink-soft);
+}
+
+.import-result dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+
+.import-result dl div {
+  min-width: 8rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
+}
+
+.import-result dl div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.import-result dt {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.import-result dd {
+  margin: 0.2rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pending-list {
+  display: grid;
+  gap: 0;
+}
+
+.pending-row {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pending-row h3 {
+  margin-bottom: 0.25rem;
+  font-size: 1.15rem;
+}
+
+.pending-row__meta {
+  margin-bottom: 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.pending-row__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1rem;
+}
+
+.pending-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.pending-errors {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-left: 3px solid var(--expense);
+  background: var(--danger-bg);
+  color: var(--expense);
+  list-style: none;
+}
+
+.pending-warning {
+  margin: 0 0 0.85rem;
+  color: var(--brass);
+  font-weight: 600;
+}
+
 @media (max-width: 720px) {
   main {
     padding: 2rem 1.25rem 3.5rem 2rem;
@@ -497,6 +634,19 @@ h3 {
 
   .movement-table {
     min-width: 30rem;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-header .button {
+    align-self: flex-start;
+  }
+
+  .pending-row__fields {
+    grid-template-columns: 1fr;
   }
 }
 
