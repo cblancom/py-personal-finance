@@ -157,3 +157,18 @@ def test_description_validation(description, message):
 
     assert not row.is_valid
     assert row.errors[0].message == message
+
+
+def test_expense_accepts_explicit_type_with_unknown_category():
+    row = validate_import_row(
+        movement_type="GASTO",
+        fecha="2026-10-21",
+        descripcion="Mercado",
+        valor="120.50",
+        categoria="Mercado",
+        tipo_gasto=ExpenseType.NON_NECESSARY,
+    )
+
+    assert row.is_valid
+    assert row.category == "Mercado"
+    assert row.expense_type == ExpenseType.NON_NECESSARY

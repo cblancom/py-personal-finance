@@ -11,7 +11,7 @@ T-001 ──► T-002
   ├──► T-003 ──► T-004
   ├──► T-003 ──► T-005
   └──► T-013
-T-002 + T-004 + T-005 + T-013 ──► T-006 ──► T-007 ──► T-008
+T-002 + T-004 + T-005 ──► T-006 ──► T-007 ──► T-008
 T-008 ──► T-009 ──► T-010 ──┐
                     └──► T-011 ──┴──► T-012
 T-001 a T-008 + T-013 ──► T-014
@@ -19,7 +19,7 @@ T-009 a T-012 ──► T-015
 T-014 + T-015 ──► T-016
 ```
 
-T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara dependencias y el límite de subida. T-004 y T-005 pueden ejecutarse en paralelo una vez listo T-003. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cierra la especificación.
+T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara el límite de subida y valida las imágenes. T-004 y T-005 pueden ejecutarse en paralelo una vez listo T-003. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cierra la especificación.
 
 Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
 
@@ -94,12 +94,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff check .
     ```
 
-- [ ] **T-006 — Implementar el servicio de importación y el endpoint de carga**
+- [x] **T-006 — Implementar el servicio de importación y el endpoint de carga**
   - Requisitos: FR-001, FR-005, FR-007, FR-014, FR-015; NFR-002.
-  - Dependencias: T-001, T-002, T-003, T-004, T-005, T-013.
+  - Dependencias: T-001, T-002, T-003, T-004, T-005.
   - Descripción: añadir `python-multipart`, crear schemas de lote y fila, implementar el servicio que valida el archivo, clasifica filas, detecta duplicados, crea el lote y los movimientos completos en una transacción, y expone `POST /api/importaciones`. Añadir límites de tamaño, filas, extensión y MIME.
   - Hecho cuando: CSV y XLSX válidos crean lote y movimientos; filas inválidas quedan pendientes; un fallo de base de datos revierte todo; respuestas `413`/`415`/`422` son claras; no se registran datos sensibles.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creado `app/services/imports/importer.py` y `POST /api/importaciones`; soporta CSV/XLSX, límites, MIME/extensión, validación por fila, contabilización transaccional, pendientes y detección de duplicados. `python-multipart` añadido; 9 pruebas de API y 216/216 backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     docker compose exec api uv run pytest tests/api tests/integration
@@ -107,12 +107,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
       http://localhost:8000/api/importaciones
     ```
 
-- [ ] **T-007 — Implementar listado y conteo de pendientes**
+- [x] **T-007 — Implementar listado y conteo de pendientes**
   - Requisitos: FR-008, FR-012, NFR-008.
   - Dependencias: T-006.
   - Descripción: crear los schemas de pendientes y los endpoints `GET /api/importaciones/pendientes` y `GET /api/importaciones/pendientes/count`. Listar solo estado `PENDIENTE`, ordenar por lote y fila, y calcular el conteo desde PostgreSQL. Declarar la ruta `count` antes de la ruta con identificador.
   - Hecho cuando: los pendientes se listan con errores y datos disponibles; el conteo coincide con la base; no se incluyen importados ni descartados; pruebas de API pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): creados `ImportPendingRowRead`, `ImportPendingCountRead` y los endpoints de listado y conteo; se listan solo pendientes ordenados por lote/fila y el conteo se obtiene de PostgreSQL. 16 pruebas de importación y 224/224 backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     docker compose exec api uv run pytest tests/api
@@ -120,12 +120,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     curl http://localhost:8000/api/importaciones/pendientes/count
     ```
 
-- [ ] **T-008 — Implementar actualización, contabilización y descarte**
+- [x] **T-008 — Implementar actualización, contabilización y descarte**
   - Requisitos: FR-009, FR-010, FR-011, FR-013, NFR-002.
   - Dependencias: T-006, T-007.
   - Descripción: implementar `PUT /api/importaciones/pendientes/{id}`, `POST /api/importaciones/pendientes/{id}/contabilizar` y `DELETE /api/importaciones/pendientes/{id}`. Revalidar en servidor, bloquear la fila, crear el movimiento y actualizar la referencia en una transacción, y aplicar descarte lógico. Devolver `404`, `409` y `422` correctamente.
   - Hecho cuando: un pendiente se corrige, contabiliza una sola vez y se descarta; la segunda contabilización devuelve `409`; una fila inválida devuelve `422`; el resumen solo cambia al contabilizar.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): implementados `PUT`, `POST /contabilizar` y `DELETE`; revalidación en servidor, bloqueo de fila, contabilización transaccional, descarte lógico y actualización de contadores del lote. Se permite elegir `tipo_gasto` cuando la categoría es desconocida. 16 pruebas de importación y 224/224 backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     docker compose exec api uv run pytest tests/api tests/integration
@@ -191,10 +191,10 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-013 — Ajustar dependencias y límite de subida**
+- [ ] **T-013 — Configurar el límite de subida y validar las dependencias**
   - Requisitos: FR-016, NFR-004, NFR-009.
   - Dependencias: T-001.
-  - Descripción: añadir `python-multipart` al grupo de dependencias de ejecución, fijar su versión y actualizar `uv.lock`; `openpyxl` ya quedó incorporado en T-005. Añadir `client_max_body_size 12m` en `docker/nginx.conf`. Reconstruir las imágenes de desarrollo y producción y verificar que las dependencias están disponibles en runtime.
+  - Descripción: añadir `client_max_body_size 12m` en `docker/nginx.conf`; `python-multipart` y `openpyxl` ya quedaron incorporados en T-006/T-005. Reconstruir las imágenes de desarrollo y producción y verificar que las dependencias están disponibles en runtime.
   - Hecho cuando: las dependencias están en producción; el lock está actualizado; Nginx acepta el tamaño previsto; el backend rechaza archivos que superan su límite; las imágenes construyen.
   - Evidencia (pendiente):
   - Verificación:
@@ -317,7 +317,7 @@ Se completa durante T-016.
 - No se implementa nada en esta etapa; todos los checkboxes quedan pendientes.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 006.
-- No se añaden dependencias hasta aprobar T-013.
+- `openpyxl` y `python-multipart` ya se incorporaron; T-013 queda para el límite de Nginx y la validación de imágenes.
 - La importación usa tablas de staging separadas de `ingresos` y `gastos`.
 - Los pendientes no participan en el resumen.
 - La decisión D-002 está aprobada: T-002 incluye una categoría opcional de ingresos.

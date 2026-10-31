@@ -42,6 +42,7 @@ def validate_import_row(
     descripcion: object,
     valor: object,
     categoria: object = None,
+    tipo_gasto: ExpenseType | str | None = None,
 ) -> ValidatedRow:
     movement = (
         movement_type.value
@@ -97,7 +98,21 @@ def validate_import_row(
 
     if movement == ImportMovementType.EXPENSE.value:
         category_text = _text(categoria)
-        if not category_text:
+        if tipo_gasto is not None:
+            try:
+                row.expense_type = (
+                    tipo_gasto if isinstance(tipo_gasto, ExpenseType) else ExpenseType(tipo_gasto)
+                )
+            except ValueError:
+                row.errors.append(
+                    ValidationIssue(
+                        field="tipo_gasto",
+                        message="El tipo de gasto no es válido.",
+                    )
+                )
+            else:
+                row.category = category_text or None
+        elif not category_text:
             row.errors.append(
                 ValidationIssue(
                     field="categoria",

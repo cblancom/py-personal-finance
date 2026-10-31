@@ -100,7 +100,12 @@ def test_session_factory(test_engine: Engine) -> sessionmaker[Session]:
 @pytest.fixture(autouse=True)
 def reset_movements(test_engine: Engine) -> Iterator[None]:
     with test_engine.begin() as connection:
-        connection.execute(text("TRUNCATE TABLE ingresos, gastos RESTART IDENTITY CASCADE"))
+        connection.execute(
+            text(
+                "TRUNCATE TABLE filas_importacion, lotes_importacion, "
+                "ingresos, gastos RESTART IDENTITY CASCADE"
+            )
+        )
     yield
 
 
