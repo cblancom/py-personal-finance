@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getExpenseChart } from './api/charts'
 import { listExpenses } from './api/expenses'
 import { countPending, listPending } from './api/imports'
 import { createIncome, listIncomes } from './api/incomes'
 import { getAnnualBalance, getPeriods } from './api/monthlyBalance'
 import { getSummary } from './api/summary'
+import type { ExpenseChart } from './types/charts'
 import type { Expense } from './types/expense'
 import type { Income } from './types/income'
 import type { AnnualBalance, BalancePeriods } from './types/monthlyBalance'
@@ -36,6 +38,10 @@ vi.mock('./api/monthlyBalance', () => ({
   updateAllocations: vi.fn(),
 }))
 
+vi.mock('./api/charts', () => ({
+  getExpenseChart: vi.fn(),
+}))
+
 vi.mock('./api/imports', () => ({
   countPending: vi.fn(),
   listPending: vi.fn(),
@@ -54,6 +60,7 @@ const listExpensesMock = vi.mocked(listExpenses)
 const createIncomeMock = vi.mocked(createIncome)
 const getAnnualBalanceMock = vi.mocked(getAnnualBalance)
 const getPeriodsMock = vi.mocked(getPeriods)
+const getExpenseChartMock = vi.mocked(getExpenseChart)
 
 const summary: Summary = {
   total_ingresos: '1000.00',
@@ -114,6 +121,20 @@ const annualBalance: AnnualBalance = {
   },
 }
 
+const expenseChart: ExpenseChart = {
+  anio: 2026,
+  meses: [
+    {
+      mes: 1,
+      gastos_por_tipo: {
+        NECESARIO: '200.00',
+        NO_NECESARIO: '0.00',
+        INVERSION: '0.00',
+      },
+    },
+  ],
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   getSummaryMock.mockResolvedValue(summary)
@@ -123,6 +144,7 @@ beforeEach(() => {
   listPendingMock.mockResolvedValue([])
   getPeriodsMock.mockResolvedValue(periods)
   getAnnualBalanceMock.mockResolvedValue(annualBalance)
+  getExpenseChartMock.mockResolvedValue(expenseChart)
 })
 
 afterEach(() => {
@@ -163,6 +185,18 @@ describe('App', () => {
     expect(getSummaryMock).toHaveBeenCalled()
     expect(listIncomesMock).toHaveBeenCalled()
     expect(listExpensesMock).toHaveBeenCalled()
+  })
+
+  it('shows the expense chart on the main screen', async () => {
+    render(<App />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Gastos por mes' }),
+    ).toBeInTheDocument()
+    expect(getExpenseChartMock).toHaveBeenCalledWith(
+      2026,
+      expect.any(AbortSignal),
+    )
   })
 
   it('navigates to import and pending views', async () => {

@@ -27,6 +27,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 006 | [`006-entrega-docker`](006-entrega-docker/spec.md) ([plan](006-entrega-docker/plan.md), [tareas](006-entrega-docker/tasks.md)) | 4 | Dockerfiles de producción, Nginx, prueba de humo y validación del MVP | 005 | Validada (T-001 a T-007 completadas) |
 | 007 | [`007-importacion-movimientos`](007-importacion-movimientos/spec.md) ([plan](007-importacion-movimientos/plan.md), [tareas](007-importacion-movimientos/tasks.md)) | 5 | Importación de ingresos y gastos desde Excel/CSV, staging persistente, corrección manual y control de pendientes | 002, 003, 004, 005 | Validada (T-001 a T-021 completadas) |
 | 008 | [`008-balance-mensual`](008-balance-mensual/spec.md) ([plan](008-balance-mensual/plan.md), [tareas](008-balance-mensual/tasks.md)) | 6 | Balance mensual en cuatro columnas, balance anual agregado, porcentajes mensuales y monto sin asignar | 002, 003, 004, 005 | Validada (T-001 a T-010 completadas) |
+| 009 | [`009-graficas-gastos`](009-graficas-gastos/spec.md) ([plan](009-graficas-gastos/plan.md), [tareas](009-graficas-gastos/tasks.md)) | 7 | Gráficas mensuales de gastos con barras apiladas y líneas, selector de año y tabla accesible | 003, 005, 008 | Validada (T-001 a T-007 completadas) |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
 
@@ -69,7 +70,7 @@ Orden propuesto, sujeto a nuevas especificaciones:
 
 1. Balance mensual y anual (spec 008, validada).
 2. Categorías configurables.
-3. Gráficos de evolución y distribución.
+3. Gráficas de gastos mensuales (spec 009, validada).
 4. Autenticación y aislamiento por usuario.
 5. Presupuestos y metas.
 6. Importación de movimientos desde Excel/CSV (spec 007); exportación CSV posterior.

@@ -3,6 +3,7 @@ import { listExpenses } from './api/expenses'
 import { countPending } from './api/imports'
 import { listIncomes } from './api/incomes'
 import { getSummary } from './api/summary'
+import { ChartSection } from './components/ChartSection'
 import { ErrorBanner } from './components/ErrorBanner'
 import { ExpenseSection } from './components/ExpenseSection'
 import { ImportView } from './components/ImportView'
@@ -125,6 +126,8 @@ function App() {
           )}
 
           {summary && <SummaryPanel summary={summary} />}
+
+          {summary && <ChartSection refreshKey={loadVersion} />}
 
           {summary && (
             <>

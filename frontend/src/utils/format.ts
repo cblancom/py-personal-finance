@@ -7,6 +7,13 @@ const moneyFormatter = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 2,
 })
 
+const compactMoneyFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
 const expenseTypeLabels: Record<ExpenseType, string> = {
   NECESARIO: 'Necesario',
   NO_NECESARIO: 'No necesario',
@@ -24,6 +31,14 @@ export function formatMoney(value: string): string {
   }
 
   return moneyFormatter.format(amount)
+}
+
+export function formatCompactMoney(value: number): string {
+  if (!Number.isFinite(value)) {
+    return ''
+  }
+
+  return compactMoneyFormatter.format(value)
 }
 
 export function formatDate(value: string): string {

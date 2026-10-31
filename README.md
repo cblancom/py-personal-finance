@@ -4,11 +4,13 @@ Aplicación local para registrar ingresos y gastos personales, clasificar los ga
 
 El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
+Versión actual: **1.0.0**.
+
 ## Estado
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, y el balance mensual (`008-balance-mensual`, revisión 2) está implementado y validado.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 2) está implementado y validado, y las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -168,6 +170,7 @@ La interfaz de una sola página permite:
 - Importar ingresos o gastos desde archivos CSV/XLSX.
 - Revisar, corregir, contabilizar o descartar registros pendientes, individualmente o todos a la vez.
 - Consultar el balance mensual en cuatro columnas o el balance anual agregado, con porcentajes mensuales.
+- Ver la evolución mensual de los gastos en barras apiladas o líneas, con selector de año y tabla de datos.
 - Leer importes en COP con formato `es-CO` y fechas en formato local.
 
 Los formularios validan los datos antes de enviarlos. Los errores se muestran en español sin detalles técnicos.
@@ -367,6 +370,34 @@ Los importes y porcentajes son strings con dos decimales. El restante puede ser 
 ```
 
 Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula con los ingresos del mes y el porcentaje correspondiente, y el restante es el asignado menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos del año.
+
+## API de gráficas
+
+La pantalla principal incluye una gráfica de gastos mensuales entre el resumen y los formularios. El usuario puede alternar entre barras apiladas y tres líneas continuas para necesarios, no necesarios e inversión.
+
+### Consultar la serie mensual
+
+`GET /api/graficos/gastos-mensuales?anio=2026`
+
+El parámetro `anio` es opcional; si falta, se usa el año actual. La respuesta contiene los doce meses, incluso sin movimientos, con los tres tipos de gasto como strings decimales:
+
+```json
+{
+  "anio": 2026,
+  "meses": [
+    {
+      "mes": 1,
+      "gastos_por_tipo": {
+        "NECESARIO": "100.00",
+        "NO_NECESARIO": "50.00",
+        "INVERSION": "20.00"
+      }
+    }
+  ]
+}
+```
+
+La serie se agrega en SQL y no incluye ingresos. Los años inválidos devuelven `422`.
 
 ## Desarrollo local
 
