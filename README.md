@@ -8,7 +8,7 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, y la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, y el balance mensual (`008-balance-mensual`, revisión 2) está implementado y validado.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -167,6 +167,7 @@ La interfaz de una sola página permite:
 - Ver estados de carga, error con reintento, listas vacías y confirmación antes de eliminar.
 - Importar ingresos o gastos desde archivos CSV/XLSX.
 - Revisar, corregir, contabilizar o descartar registros pendientes, individualmente o todos a la vez.
+- Consultar el balance mensual en cuatro columnas o el balance anual agregado, con porcentajes mensuales.
 - Leer importes en COP con formato `es-CO` y fechas en formato local.
 
 Los formularios validan los datos antes de enviarlos. Los errores se muestran en español sin detalles técnicos.
@@ -337,6 +338,35 @@ Errores:
 - `DELETE /api/importaciones/pendientes`: descarta globalmente todos los pendientes y devuelve `{"descartados": n}`. Es idempotente y no crea ni elimina movimientos.
 
 La contabilización devuelve `404` si no existe, `409` si ya fue contabilizado o descartado y `422` si todavía tiene errores.
+
+## API de balance mensual
+
+La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión. Cada columna incluye sus movimientos con fecha, descripción y valor; las tres columnas de gasto/inversión muestran además el monto asignado y el restante.
+
+### Consultar el balance
+
+- `GET /api/balance-mensual?anio=2026&mes=10`: balance del mes con movimientos.
+- `GET /api/balance-mensual?anio=2026`: balance anual agregado, sin movimientos.
+- `GET /api/balance-mensual`: balance anual del año actual.
+- `GET /api/balance-mensual/periodos`: devuelve `{"anio_actual": 2026, "anios": [2026, 2025]}`.
+
+Los importes y porcentajes son strings con dos decimales. El restante puede ser negativo.
+
+### Guardar porcentajes mensuales
+
+`PUT /api/balance-mensual/asignaciones/{anio}/{mes}`:
+
+```json
+{
+  "porcentajes": {
+    "NECESARIO": "50.00",
+    "NO_NECESARIO": "30.00",
+    "INVERSION": "20.00"
+  }
+}
+```
+
+Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula con los ingresos del mes y el porcentaje correspondiente, y el restante es el asignado menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos del año.
 
 ## Desarrollo local
 

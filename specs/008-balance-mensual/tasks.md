@@ -1,6 +1,6 @@
 # Tareas 008 — Balance mensual
 
-- Estado: en implementación (revisión 2).
+- Estado: validada (revisión 2).
 - Especificación: [`spec.md`](spec.md).
 - Plan: [`plan.md`](plan.md).
 
@@ -88,12 +88,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff format --check .
     ```
 
-- [ ] **T-006 — Crear tipos y cliente API del frontend**
+- [x] **T-006 — Crear tipos y cliente API del frontend**
   - Requisitos: FR-014, FR-015, FR-016.
   - Dependencias: T-004, T-005.
   - Descripción: añadir `frontend/src/types/monthlyBalance.ts` y `frontend/src/api/monthlyBalance.ts` con tipos de movimientos, consultas de periodos, balance mensual/anual y actualización de porcentajes. Añadir pruebas con `fetch` simulado.
   - Hecho cuando: el cliente usa `/api`, conserva strings decimales y las pruebas cubren rutas, métodos y cuerpos.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `monthlyBalance.ts` define tipos de rubros, movimientos, periodos y payload; el cliente usa `/api` para periodos, balance mensual/anual y actualización de porcentajes. 4 pruebas nuevas; 81/81 frontend; lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend
@@ -102,12 +102,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     npm run typecheck
     ```
 
-- [ ] **T-007 — Implementar `MonthlyBalanceView`**
+- [x] **T-007 — Implementar `MonthlyBalanceView`**
   - Requisitos: FR-002, FR-003, FR-005, FR-006, FR-008, FR-009, FR-010, FR-017.
   - Dependencias: T-006.
   - Descripción: crear la vista con selectores de año/mes, carga de periodos, consulta del balance, cuatro columnas mensuales con fecha/descripción/valor, tabla anual agregada, totales, restantes, monto sin asignar y estados de carga, error, vacío y reintento. La vista anual se activa con `Todos` y muestra porcentaje ponderado.
   - Hecho cuando: los selectores cambian el periodo; la vista mensual muestra las cuatro columnas y sus totales; la vista anual agrega el año; las columnas vacías tienen estado propio; los estados de UI son accesibles.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `MonthlyBalanceView` carga periodos, consulta mes/año, muestra cuatro columnas con fecha/descripción/valor, totales, restantes, sin asignar y tabla anual agregada; 5 pruebas de vista; 87/87 frontend.
   - Verificación:
     ```bash
     cd frontend
@@ -116,12 +116,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     npm run typecheck
     ```
 
-- [ ] **T-008 — Añadir edición de porcentajes e integrar la pestaña**
+- [x] **T-008 — Añadir edición de porcentajes e integrar la pestaña**
   - Requisitos: FR-001, FR-004, FR-017.
   - Dependencias: T-007.
   - Descripción: añadir edición de porcentajes en la vista mensual, botón `Guardar porcentajes`, validación local, confirmación de guardado y refresco del balance. Mostrar los restantes en las columnas de gastos necesarios, gastos no necesarios e inversión. Integrar `Balance mensual` como tercera pestaña en `App` y ajustar estilos.
   - Hecho cuando: la pestaña existe y es accesible; guardar porcentajes actualiza los totales y restantes; un error de validación se muestra sin perder datos; los porcentajes de un mes no afectan a otro.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): edición y guardado de porcentajes con validación local, confirmación y refresco; pestaña `Balance mensual` integrada en `App`; estilos responsive; 87/87 frontend y build OK.
   - Verificación:
     ```bash
     cd frontend
@@ -131,12 +131,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-009 — Completar pruebas de backend, frontend y OpenAPI**
+- [x] **T-009 — Completar pruebas de backend, frontend y OpenAPI**
   - Requisitos: FR-001 a FR-018, NFR-004, NFR-007.
   - Dependencias: T-001 a T-008.
   - Descripción: cubrir cálculos, schemas, endpoints, listas de movimientos con fecha/descripción/valor, columnas vacías, integración con PostgreSQL, migración `0007`, OpenAPI, cliente API, componentes y pestaña en `App`. Verificar que las suites existentes siguen pasando.
   - Hecho cuando: los casos de la matriz están cubiertos; backend y frontend pasan; la migración upgrade/downgrade funciona; OpenAPI incluye las rutas.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): 256/256 pruebas backend y 88/88 frontend; OpenAPI, migración `0007`, movimientos, columnas vacías, porcentajes sin asignar y restante negativo cubiertos; ruff, format, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd backend
@@ -152,12 +152,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-010 — Documentar y validar la especificación**
+- [x] **T-010 — Documentar y validar la especificación**
   - Requisitos: AC-001 a AC-014, NFR-004, NFR-006, NFR-007, NFR-008.
   - Dependencias: T-009.
   - Descripción: actualizar README, AGENTS y `specs/README.md`; registrar evidencia; reconstruir producción; ejecutar smoke test y verificar el flujo mensual/anual.
   - Hecho cuando: la documentación coincide con la implementación; los AC tienen evidencia; producción está saludable; la especificación queda validada.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): README, AGENTS y `specs/README.md` actualizados; producción migrada a `0007`, servicios healthy, smoke OK y endpoints `GET /api/balance-mensual` y `/periodos` verificados. 256/256 backend y 88/88 frontend.
   - Verificación:
     ```bash
     docker compose --env-file .env.production -f compose.prod.yaml config -q
@@ -209,24 +209,24 @@ Se completa durante T-010.
 
 | Criterio | Resultado | Evidencia |
 |---|---|---|
-| AC-001 | Pendiente | |
-| AC-002 | Pendiente | |
-| AC-003 | Pendiente | Debe cubrir cuatro columnas con fecha, descripción, valor, total y restante. |
-| AC-004 | Pendiente | |
-| AC-005 | Pendiente | |
-| AC-006 | Pendiente | |
-| AC-007 | Pendiente | |
-| AC-008 | Pendiente | |
-| AC-009 | Pendiente | |
-| AC-010 | Pendiente | |
-| AC-011 | Pendiente | |
-| AC-012 | Pendiente | |
-| AC-013 | Pendiente | |
-| AC-014 | Pendiente | |
+| AC-001 | Cumple | Pestaña `Balance mensual` y prueba de `App`. |
+| AC-002 | Cumple | Selectores de año/mes y año actual por defecto en pruebas de componente. |
+| AC-003 | Cumple | Cuatro columnas con fecha, descripción, valor, total y restante. |
+| AC-004 | Cumple | Vista anual con `Todos` y agregación anual. |
+| AC-005 | Cumple | Upsert independiente por mes en pruebas de integración. |
+| AC-006 | Cumple | Monto sin asignar y validación de suma. |
+| AC-007 | Cumple | Suma mayor que 100 devuelve `422`. |
+| AC-008 | Cumple | Restante negativo en cálculo y componente. |
+| AC-009 | Cumple | Gastos `INVERSION` en pruebas de integración. |
+| AC-010 | Cumple | Porcentaje anual ponderado en cálculo y API. |
+| AC-011 | Cumple | Periodos disponibles con año actual y años con datos. |
+| AC-012 | Cumple | Rutas y schemas en OpenAPI. |
+| AC-013 | Cumple | Carga, error, vacío, validación y guardado en componentes. |
+| AC-014 | Cumple | Suites completas y smoke de producción. |
 
 ## Notas
 
-- T-001 a T-005 están completadas; T-006 a T-010 quedan pendientes.
+- T-001 a T-010 están completadas; la especificación queda validada.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 007.
 - No se añaden dependencias nuevas.

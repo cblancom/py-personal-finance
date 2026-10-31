@@ -1,11 +1,11 @@
 # Especificación 008 — Balance mensual
 
-- Estado: en implementación (revisión 2).
+- Estado: validada (revisión 2).
 - Fase: 6.
 - Iteración: post-MVP.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/`, `specs/004-api-resumen/`, `specs/005-interfaz-mvp/`.
-- Plan: `plan.md` (aprobado; revisión 2).
-- Tareas: `tasks.md` (T-001 a T-005 completadas; T-006 a T-010 pendientes).
+- Plan: `plan.md` (aprobado; revisión 2 implementada y validada).
+- Tareas: `tasks.md` (T-001 a T-010 completadas).
 
 ## 1. Contexto y problema
 
@@ -507,7 +507,7 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 
 ## 11. Resultado de validación
 
-Pendiente. Se completa al implementar y validar la especificación.
+La revisión 2 fue validada el 2026-10-31 con 256 pruebas de backend y 88 de frontend, migración `0007` y smoke test de producción. La vista mensual de cuatro columnas, los porcentajes mensuales, el monto sin asignar y la vista anual ponderada quedaron cubiertos por pruebas de cálculo, API, integración y componentes.
 
 ## 12. Historial de revisiones
 

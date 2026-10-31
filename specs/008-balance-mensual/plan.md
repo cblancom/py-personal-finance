@@ -1,6 +1,6 @@
 # Plan técnico 008 — Balance mensual
 
-- Estado: aprobado (revisión 2).
+- Estado: aprobado (revisión 2 implementada y validada).
 - Especificación: [`spec.md`](spec.md).
 - Fase: 6.
 - Iteración: post-MVP.

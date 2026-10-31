@@ -7,13 +7,14 @@ import { ErrorBanner } from './components/ErrorBanner'
 import { ExpenseSection } from './components/ExpenseSection'
 import { ImportView } from './components/ImportView'
 import { IncomeSection } from './components/IncomeSection'
+import { MonthlyBalanceView } from './components/MonthlyBalanceView'
 import { PendingView } from './components/PendingView'
 import { SummaryPanel } from './components/SummaryPanel'
 import type { Expense } from './types/expense'
 import type { Income } from './types/income'
 import type { Summary } from './types/summary'
 
-type ActiveTab = 'incomes' | 'expenses'
+type ActiveTab = 'incomes' | 'expenses' | 'monthly'
 type View = 'main' | 'import' | 'pending'
 
 function App() {
@@ -148,6 +149,16 @@ function App() {
                 >
                   Gastos
                 </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="monthly-tab"
+                  className="tab"
+                  aria-selected={activeTab === 'monthly'}
+                  onClick={() => setActiveTab('monthly')}
+                >
+                  Balance mensual
+                </button>
               </div>
 
               {activeTab === 'incomes' ? (
@@ -158,13 +169,21 @@ function App() {
                 >
                   <IncomeSection incomes={incomes} onChanged={reloadData} />
                 </div>
-              ) : (
+              ) : activeTab === 'expenses' ? (
                 <div
                   role="tabpanel"
                   id="expenses-panel"
                   aria-labelledby="expenses-tab"
                 >
                   <ExpenseSection expenses={expenses} onChanged={reloadData} />
+                </div>
+              ) : (
+                <div
+                  role="tabpanel"
+                  id="monthly-panel"
+                  aria-labelledby="monthly-tab"
+                >
+                  <MonthlyBalanceView />
                 </div>
               )}
             </>

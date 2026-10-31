@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listExpenses } from './api/expenses'
 import { countPending, listPending } from './api/imports'
 import { createIncome, listIncomes } from './api/incomes'
+import { getAnnualBalance, getPeriods } from './api/monthlyBalance'
 import { getSummary } from './api/summary'
 import type { Expense } from './types/expense'
 import type { Income } from './types/income'
+import type { AnnualBalance, BalancePeriods } from './types/monthlyBalance'
 import type { Summary } from './types/summary'
 import App from './App'
 
@@ -27,6 +29,13 @@ vi.mock('./api/summary', () => ({
   getSummary: vi.fn(),
 }))
 
+vi.mock('./api/monthlyBalance', () => ({
+  getPeriods: vi.fn(),
+  getAnnualBalance: vi.fn(),
+  getMonthlyBalance: vi.fn(),
+  updateAllocations: vi.fn(),
+}))
+
 vi.mock('./api/imports', () => ({
   countPending: vi.fn(),
   listPending: vi.fn(),
@@ -43,6 +52,8 @@ const listPendingMock = vi.mocked(listPending)
 const listIncomesMock = vi.mocked(listIncomes)
 const listExpensesMock = vi.mocked(listExpenses)
 const createIncomeMock = vi.mocked(createIncome)
+const getAnnualBalanceMock = vi.mocked(getAnnualBalance)
+const getPeriodsMock = vi.mocked(getPeriods)
 
 const summary: Summary = {
   total_ingresos: '1000.00',
@@ -71,6 +82,38 @@ const expense: Expense = {
   valor: '200.00',
 }
 
+const periods: BalancePeriods = {
+  anio_actual: 2026,
+  anios: [2026],
+}
+
+const annualBalance: AnnualBalance = {
+  anio: 2026,
+  mes: null,
+  ingresos: '1000.00',
+  sin_asignar: '0.00',
+  rubros: {
+    NECESARIO: {
+      porcentaje: '50.00',
+      asignado: '500.00',
+      gastado: '200.00',
+      restante: '300.00',
+    },
+    NO_NECESARIO: {
+      porcentaje: '30.00',
+      asignado: '300.00',
+      gastado: '0.00',
+      restante: '300.00',
+    },
+    INVERSION: {
+      porcentaje: '20.00',
+      asignado: '200.00',
+      gastado: '0.00',
+      restante: '200.00',
+    },
+  },
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   getSummaryMock.mockResolvedValue(summary)
@@ -78,6 +121,8 @@ beforeEach(() => {
   listExpensesMock.mockResolvedValue([expense])
   countPendingMock.mockResolvedValue({ pendientes: 2 })
   listPendingMock.mockResolvedValue([])
+  getPeriodsMock.mockResolvedValue(periods)
+  getAnnualBalanceMock.mockResolvedValue(annualBalance)
 })
 
 afterEach(() => {
@@ -191,6 +236,23 @@ describe('App', () => {
     expect(
       screen.queryByRole('heading', { name: 'Nuevo ingreso' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('switches to the monthly balance tab', async () => {
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'Resumen' })
+    fireEvent.click(screen.getByRole('tab', { name: 'Balance mensual' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Balance mensual' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Balance anual')).toBeInTheDocument()
+    expect(getPeriodsMock).toHaveBeenCalled()
+    expect(getAnnualBalanceMock).toHaveBeenCalledWith(
+      2026,
+      expect.any(AbortSignal),
+    )
   })
 
   it('shows a load error and retries', async () => {

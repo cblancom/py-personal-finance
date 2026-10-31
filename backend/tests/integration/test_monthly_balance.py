@@ -131,6 +131,52 @@ def test_monthly_balance_returns_movements_and_remaining(client: TestClient):
     assert body["movimientos"]["INVERSION"][0]["valor"] == "200.00"
 
 
+def test_monthly_balance_shows_unassigned_and_negative_remaining(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_expense(
+        client,
+        amount="600.00",
+        movement_date=iso_date(year, 10, 2),
+        expense_type="NECESARIO",
+    )
+
+    response = update_allocation(
+        client,
+        year=year,
+        month=10,
+        necessary="50.00",
+        non_necessary="0.00",
+        investment="0.00",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sin_asignar"] == "500.00"
+    assert body["rubros"]["NECESARIO"] == {
+        "porcentaje": "50.00",
+        "asignado": "500.00",
+        "gastado": "600.00",
+        "restante": "-100.00",
+    }
+
+
+def test_monthly_movements_are_ordered_by_date_and_id(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="10.00", movement_date=iso_date(year, 10, 3))
+    create_income(client, amount="20.00", movement_date=iso_date(year, 10, 1))
+    create_income(client, amount="30.00", movement_date=iso_date(year, 10, 2))
+
+    response = client.get(f"/api/balance-mensual?anio={year}&mes=10")
+
+    assert response.status_code == 200
+    assert [item["fecha"] for item in response.json()["movimientos"]["INGRESOS"]] == [
+        iso_date(year, 10, 1),
+        iso_date(year, 10, 2),
+        iso_date(year, 10, 3),
+    ]
+
+
 def test_annual_balance_uses_weighted_percentages(client: TestClient):
     year = date.today().year
     create_income(client, amount="1000.00", movement_date=iso_date(year, 1, 10))
