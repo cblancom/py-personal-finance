@@ -5,7 +5,7 @@
 - Iteración: post-MVP.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/`, `specs/004-api-resumen/`, `specs/005-interfaz-mvp/`.
 - Plan: `plan.md` (aprobado; revisión 2).
-- Tareas: `tasks.md` (T-001 a T-003 completadas; T-004 a T-010 pendientes).
+- Tareas: `tasks.md` (T-001 a T-005 completadas; T-006 a T-010 pendientes).
 
 ## 1. Contexto y problema
 

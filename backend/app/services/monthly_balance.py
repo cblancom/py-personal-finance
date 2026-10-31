@@ -204,6 +204,37 @@ def _monthly_movements(
     )
 
 
+def upsert_monthly_allocation(
+    db: Session,
+    year: int,
+    month: int,
+    percentages: Mapping[ExpenseType, Decimal],
+) -> MonthlyAllocation:
+    allocation = db.scalar(
+        select(MonthlyAllocation).where(
+            MonthlyAllocation.year == year,
+            MonthlyAllocation.month == month,
+        )
+    )
+    if allocation is None:
+        allocation = MonthlyAllocation(year=year, month=month)
+        db.add(allocation)
+
+    allocation.necessary_percentage = normalize_percentage(percentages[ExpenseType.NECESSARY])
+    allocation.non_necessary_percentage = normalize_percentage(
+        percentages[ExpenseType.NON_NECESSARY]
+    )
+    allocation.investment_percentage = normalize_percentage(percentages[ExpenseType.INVESTMENT])
+
+    try:
+        db.commit()
+        db.refresh(allocation)
+        return allocation
+    except Exception:
+        db.rollback()
+        raise
+
+
 def get_monthly_balance(db: Session, year: int, month: int) -> MonthlyBalance:
     start, end = _month_range(year, month)
     incomes = _sum_incomes(db, start, end)

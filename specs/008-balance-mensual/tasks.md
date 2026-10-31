@@ -61,12 +61,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff check .
     ```
 
-- [ ] **T-004 — Implementar los endpoints de consulta**
+- [x] **T-004 — Implementar los endpoints de consulta**
   - Requisitos: FR-009, FR-010, FR-013, FR-014, FR-015, FR-016, NFR-002.
   - Dependencias: T-002, T-003.
   - Descripción: crear `app/api/routes/monthly_balance.py` con `GET /api/balance-mensual` para mes/año actual, `GET /api/balance-mensual/periodos` y registro en `main.py`. Validar `anio` y `mes`; devolver siempre los tres rubros y, en la consulta mensual, las cuatro listas de movimientos.
   - Hecho cuando: las consultas mensual y anual responden `200`; sin parámetros usan el año actual; los periodos incluyen años con datos y el año actual; OpenAPI contiene las rutas.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `GET /api/balance-mensual` devuelve mes/año o anual con año actual por defecto; `GET /api/balance-mensual/periodos` devuelve años disponibles; OpenAPI contiene las rutas. 7 pruebas de integración y 1 de OpenAPI; 254/254 pruebas de backend.
   - Verificación:
     ```bash
     cd backend
@@ -74,12 +74,12 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff check .
     ```
 
-- [ ] **T-005 — Implementar el guardado de porcentajes**
+- [x] **T-005 — Implementar el guardado de porcentajes**
   - Requisitos: FR-004, FR-011, FR-012, FR-014.
   - Dependencias: T-003.
   - Descripción: añadir `PUT /api/balance-mensual/asignaciones/{anio}/{mes}` para crear o actualizar los tres porcentajes del mes, validar la suma y devolver el balance mensual actualizado, incluidos los movimientos del mes. Usar una transacción y rollback ante error.
   - Hecho cuando: guardar dos veces el mismo mes actualiza la fila sin duplicarla; los porcentajes de otros meses no cambian; la suma mayor que 100 devuelve `422`; no se crean movimientos.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `PUT /api/balance-mensual/asignaciones/{anio}/{mes}` hace upsert, valida la suma, devuelve el balance con movimientos y no duplica filas; suma inválida devuelve `422`. Pruebas de integración incluidas en 254/254.
   - Verificación:
     ```bash
     cd backend
@@ -226,7 +226,7 @@ Se completa durante T-010.
 
 ## Notas
 
-- T-001 a T-003 están completadas; T-004 a T-010 quedan pendientes.
+- T-001 a T-005 están completadas; T-006 a T-010 quedan pendientes.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 007.
 - No se añaden dependencias nuevas.
