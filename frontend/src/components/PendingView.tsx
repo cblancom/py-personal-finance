@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ErrorBanner } from './ErrorBanner'
 import {
   commitPending,
+  discardAllPending,
   discardPending,
   listPending,
   updatePending,
@@ -44,10 +45,11 @@ function draftToPayload(
     fecha: draft.fecha || null,
     descripcion: draft.descripcion || null,
     valor: draft.valor || null,
-    categoria: draft.categoria || null,
   }
   if (row.tipo_movimiento === 'GASTO') {
     payload.tipo_gasto = draft.tipo_gasto || null
+  } else {
+    payload.categoria = draft.categoria || null
   }
   return payload
 }
@@ -59,6 +61,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [discardingAll, setDiscardingAll] = useState(false)
   const [loadVersion, setLoadVersion] = useState(0)
 
   useEffect(() => {
@@ -180,6 +183,35 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
     }
   }
 
+  async function handleDiscardAll() {
+    if (
+      rows.length === 0 ||
+      discardingAll ||
+      busyId !== null ||
+      !window.confirm('¿Descartar todos los registros pendientes?')
+    ) {
+      return
+    }
+
+    setDiscardingAll(true)
+    setActionError(null)
+
+    try {
+      await discardAllPending()
+      setRows([])
+      setDrafts({})
+      await onChanged()
+    } catch {
+      setActionError(
+        'No se pudieron descartar todos los pendientes. Inténtalo de nuevo.',
+      )
+    } finally {
+      setDiscardingAll(false)
+    }
+  }
+
+  const actionsDisabled = busyId !== null || discardingAll
+
   return (
     <section className="pending-view" aria-labelledby="pending-title">
       <div className="view-header">
@@ -190,9 +222,24 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
             contabilidad.
           </p>
         </div>
-        <button type="button" className="button button--ghost" onClick={onBack}>
-          Volver
-        </button>
+        <div className="view-header__actions">
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={() => void handleDiscardAll()}
+            disabled={rows.length === 0 || loading || actionsDisabled}
+          >
+            {discardingAll ? 'Descartando...' : 'Descartar todo'}
+          </button>
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={onBack}
+            disabled={discardingAll}
+          >
+            Volver
+          </button>
+        </div>
       </div>
 
       {loading && (
@@ -223,10 +270,12 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
           {rows.map((row) => {
             const draft = drafts[row.id] ?? toDraft(row)
             const isBusy = busyId === row.id
+            const rowActionsDisabled = isBusy || discardingAll
             const validationErrors = row.errores.filter(
               (error) => error.campo !== 'duplicado',
             )
-            const canCommit = validationErrors.length === 0 && !isBusy
+            const canCommit =
+              validationErrors.length === 0 && !rowActionsDisabled
 
             return (
               <article
@@ -269,7 +318,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                       onChange={(event) =>
                         updateDraft(row.id, 'fecha', event.target.value)
                       }
-                      disabled={isBusy}
+                      disabled={rowActionsDisabled}
                     />
                   </div>
 
@@ -285,7 +334,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                       onChange={(event) =>
                         updateDraft(row.id, 'descripcion', event.target.value)
                       }
-                      disabled={isBusy}
+                      disabled={rowActionsDisabled}
                     />
                   </div>
 
@@ -299,25 +348,27 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                       onChange={(event) =>
                         updateDraft(row.id, 'valor', event.target.value)
                       }
-                      disabled={isBusy}
+                      disabled={rowActionsDisabled}
                     />
                   </div>
 
-                  <div className="field">
-                    <label htmlFor={`pending-${row.id}-categoria`}>
-                      Categoría
-                    </label>
-                    <input
-                      id={`pending-${row.id}-categoria`}
-                      type="text"
-                      maxLength={100}
-                      value={draft.categoria}
-                      onChange={(event) =>
-                        updateDraft(row.id, 'categoria', event.target.value)
-                      }
-                      disabled={isBusy}
-                    />
-                  </div>
+                  {row.tipo_movimiento === 'INGRESO' && (
+                    <div className="field">
+                      <label htmlFor={`pending-${row.id}-categoria`}>
+                        Categoría
+                      </label>
+                      <input
+                        id={`pending-${row.id}-categoria`}
+                        type="text"
+                        maxLength={100}
+                        value={draft.categoria}
+                        onChange={(event) =>
+                          updateDraft(row.id, 'categoria', event.target.value)
+                        }
+                        disabled={rowActionsDisabled}
+                      />
+                    </div>
+                  )}
 
                   {row.tipo_movimiento === 'GASTO' && (
                     <div className="field">
@@ -334,7 +385,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                             event.target.value as ExpenseType | '',
                           )
                         }
-                        disabled={isBusy}
+                        disabled={rowActionsDisabled}
                       >
                         <option value="">Sin tipo</option>
                         {EXPENSE_TYPES.map((type) => (
@@ -352,7 +403,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                     type="button"
                     className="button button--primary"
                     onClick={() => void handleSave(row)}
-                    disabled={isBusy}
+                    disabled={rowActionsDisabled}
                   >
                     {isBusy ? 'Guardando...' : 'Guardar'}
                   </button>
@@ -368,7 +419,7 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
                     type="button"
                     className="button button--link"
                     onClick={() => void handleDiscard(row)}
-                    disabled={isBusy}
+                    disabled={rowActionsDisabled}
                   >
                     Descartar
                   </button>

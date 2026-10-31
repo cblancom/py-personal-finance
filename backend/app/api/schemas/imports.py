@@ -44,6 +44,10 @@ class ImportPendingCountRead(BaseModel):
     pendientes: int
 
 
+class ImportPendingDiscardRead(BaseModel):
+    descartados: int
+
+
 class ImportPendingUpdate(BaseModel):
     fecha: date | None = None
     descripcion: str | None = Field(default=None, max_length=200)

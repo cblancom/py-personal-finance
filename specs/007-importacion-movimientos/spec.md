@@ -1,17 +1,17 @@
 # Especificación 007 — Importación de ingresos y gastos desde Excel y CSV
 
-- Estado: aprobada.
+- Estado: validada (revisión 3).
 - Fase: 5.
 - Iteración: MVP+.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/`, `specs/004-api-resumen/`, `specs/005-interfaz-mvp/`.
-- Plan: `plan.md` (aprobado).
-- Tareas: `tasks.md` (aprobadas).
+- Plan: `plan.md` (aprobado; revisión 3 implementada).
+- Tareas: `tasks.md` (T-001 a T-021 completadas).
 
 ## 1. Contexto y problema
 
 El MVP permite registrar ingresos y gastos manualmente, uno por uno. No existe una forma de incorporar movimientos históricos que el usuario ya tiene en hojas de cálculo o archivos CSV.
 
-El usuario necesita importar archivos con las columnas `Fecha`, `Descripción`, `Valor` y `Categoría`. Los archivos reales no siempre están completos: puede faltar una fecha, una descripción, un valor o una categoría; puede haber valores inválidos; y un mismo movimiento puede aparecer más de una vez.
+El usuario necesita importar archivos con las columnas `Fecha`, `Descripción`, `Valor` y `Categoría`/`Tipo de gasto`. En los gastos, `Categoría` es el mismo campo que `Tipo de gasto`; en los ingresos es una categoría opcional. Los archivos reales no siempre están completos: puede faltar una fecha, una descripción, un valor o un tipo; puede haber valores inválidos; y un mismo movimiento puede aparecer más de una vez.
 
 La aplicación actual tiene limitaciones relevantes para este caso:
 
@@ -68,7 +68,7 @@ Como usuario, quiero completar o corregir un pendiente y contabilizarlo cuando s
 
 **Flujo esperado:**
 
-1. El usuario edita fecha, descripción, valor, categoría o tipo según falte.
+1. El usuario edita fecha, descripción, valor, tipo de gasto o categoría según falte.
 2. Guarda los cambios.
 3. El sistema revalida la fila y actualiza sus errores.
 4. Si la fila es válida, el usuario puede contabilizarla.
@@ -127,14 +127,15 @@ La interfaz debe permitir seleccionar un archivo `.csv` o `.xlsx` y enviarlo al 
 
 ### FR-002 — Estructura y columnas del archivo
 
-El sistema debe identificar las columnas `Fecha`, `Descripción`, `Valor` y `Categoría`.
+El sistema debe identificar las columnas `Fecha`, `Descripción`, `Valor` y `Categoría`/`Tipo de gasto`.
 
 - La primera fila con contenido se considera cabecera.
 - Para Excel se usa la primera hoja del libro.
 - Los nombres de columna se comparan sin distinguir mayúsculas, acentos ni espacios externos.
 - Se aceptan alias equivalentes documentados para las columnas obligatorias.
 - `Fecha`, `Descripción` y `Valor` son obligatorios.
-- `Categoría` es obligatoria para gastos y opcional para ingresos.
+- Para gastos, la columna se denomina `Tipo de gasto`; `Categoría` se acepta como alias de compatibilidad y es obligatoria.
+- Para ingresos, `Categoría` es opcional.
 - Las columnas adicionales se ignoran sin alterar los datos.
 - Si faltan cabeceras obligatorias, el archivo se rechaza completo y no se crea ningún movimiento.
 
@@ -147,7 +148,7 @@ Cada fila debe validarse por separado:
 - Fecha válida.
 - Descripción no vacía, recortada, máximo 200 caracteres.
 - Valor numérico mayor que 0, máximo 12 dígitos y 2 decimales.
-- Categoría o tipo válido según el tipo de movimiento.
+- Tipo de gasto válido para gastos o categoría opcional para ingresos.
 - Fila completamente vacía: se ignora y no se cuenta.
 - Los errores deben incluir el número de fila y el campo afectado.
 - Los valores inválidos no deben convertirse a `float` para cálculos monetarios.
@@ -160,20 +161,20 @@ La importación debe distinguir ingresos y gastos.
 
 - El usuario selecciona un tipo por archivo: `INGRESO` o `GASTO`.
 - No se admiten archivos mixtos en esta versión.
-- Para gastos, la columna `Categoría` se normaliza a `NECESARIO`, `NO_NECESARIO` o `INVERSION`.
+- Para gastos, la columna `Tipo de gasto` se normaliza a `NECESARIO`, `NO_NECESARIO` o `INVERSION`; `Categoría` se acepta como alias.
 - Se aceptan variantes de mayúsculas, acentos y separadores documentadas.
-- Una categoría de gasto desconocida deja la fila pendiente para que el usuario elija el tipo.
+- Un tipo de gasto desconocido deja la fila pendiente para que el usuario lo corrija.
 - Para ingresos, la categoría es opcional y se conserva como texto libre.
-- El tipo de movimiento y la categoría original deben conservarse en la fila de importación para auditoría.
+- El tipo de movimiento y el valor original de la columna deben conservarse en la fila de importación para auditoría.
 
-**Verificación:** un gasto con categoría equivalente se contabiliza; una categoría desconocida queda pendiente; un ingreso conserva o marca su categoría según la decisión aprobada.
+**Verificación:** un gasto con `Tipo de gasto` equivalente se contabiliza; un tipo desconocido queda pendiente; un ingreso conserva o marca su categoría opcional.
 
 ### FR-005 — Clasificación de filas completas e incompletas
 
 Después de validar cada fila, el sistema debe clasificarla como:
 
 - **Completa:** todos los campos obligatorios son válidos y no requiere revisión.
-- **Pendiente:** falta información, hay un valor inválido, la categoría no es reconocible o existe una posible duplicidad.
+- **Pendiente:** falta información, hay un valor inválido, el tipo de gasto no es reconocible o existe una posible duplicidad.
 - **Descartada:** el usuario decidió no contabilizarla.
 
 Las filas completas se contabilizan en la misma operación de importación. Las pendientes se persisten. Las descartadas no afectan la contabilidad.
@@ -199,7 +200,7 @@ Cada fila de importación debe persistir:
 - Lote al que pertenece.
 - Número de fila original.
 - Tipo de movimiento.
-- Fecha, descripción, valor y categoría originales, aunque sean inválidos o estén ausentes.
+- Fecha, descripción, valor y categoría/tipo originales, aunque sean inválidos o estén ausentes.
 - Datos crudos necesarios para auditoría.
 - Errores de validación.
 - Estado: `PENDIENTE`, `IMPORTADO` o `DESCARTADO`.
@@ -243,8 +244,7 @@ El usuario debe poder corregir un pendiente:
 - Fecha.
 - Descripción.
 - Valor.
-- Categoría o tipo, según el tipo de movimiento.
-- Tipo de gasto cuando la categoría no sea reconocible.
+- Categoría para ingresos o tipo de gasto para gastos.
 
 El sistema debe:
 
@@ -279,8 +279,10 @@ El usuario debe poder descartar un pendiente con confirmación.
 - El pendiente deja de contar para el indicador.
 - El registro se conserva con estado `DESCARTADO` para auditoría.
 - Una fila descartada no puede contabilizarse sin una acción explícita de restauración, que queda fuera de alcance.
+- El usuario debe poder descartar todos los pendientes globales con una sola confirmación.
+- El descarte masivo debe devolver cuántos registros descartó y actualizar los contadores de todos los lotes afectados.
 
-**Verificación:** tras descartar, el indicador baja y el resumen no cambia.
+**Verificación:** tras descartar, el indicador baja y el resumen no cambia; el descarte masivo descarta todos los pendientes y deja el conteo en cero.
 
 ### FR-012 — Indicador de pendientes
 
@@ -364,7 +366,7 @@ La interfaz debe incorporar:
 
 - Un acceso visible a la importación desde la pantalla principal.
 - Una pantalla de importación con selector de archivo, selector de tipo, estado de envío, resumen y errores.
-- Una pantalla de pendientes con edición, guardado, contabilización y descarte.
+- Una pantalla de pendientes con edición, guardado, contabilización, descarte individual y botón `Descartar todo`.
 - Un botón de regreso a la pantalla principal.
 - Un indicador de pendientes en el acceso.
 - Estados de carga, error y vacío.
@@ -423,7 +425,7 @@ Cada regla de importación, persistencia, contabilización, descarte, duplicado 
 - **BR-002:** un archivo contiene un solo tipo de movimiento: ingresos o gastos.
 - **BR-003:** solo las filas completas, válidas y no descartadas pueden contabilizarse.
 - **BR-004:** los pendientes no afectan ningún cálculo financiero.
-- **BR-005:** la categoría de un gasto se normaliza a `tipo`; una categoría desconocida requiere corrección manual.
+- **BR-005:** en gastos, `Categoría` es el mismo campo que `Tipo de gasto`; se normaliza a `tipo` y un valor desconocido requiere corrección manual.
 - **BR-006:** la categoría de un ingreso es opcional y se almacena en un campo opcional.
 - **BR-007:** los duplicados son advertencias, no bloqueos absolutos; el usuario decide.
 - **BR-008:** una fila importada no puede volver a contabilizarse.
@@ -431,6 +433,7 @@ Cada regla de importación, persistencia, contabilización, descarte, duplicado 
 - **BR-010:** eliminar o editar un movimiento ya importado no devuelve automáticamente la fila a pendientes.
 - **BR-011:** los archivos y filas respetan los límites aprobados.
 - **BR-012:** el indicador de pendientes se obtiene del backend, no de un contador local.
+- **BR-013:** el descarte masivo es global, lógico y requiere confirmación; no afecta movimientos contables.
 
 ## 7. Casos límite y errores
 
@@ -450,15 +453,15 @@ Cada regla de importación, persistencia, contabilización, descarte, duplicado 
 - Descripción ausente, vacía o demasiado larga: pendiente.
 - Valor ausente, no numérico, cero o negativo: pendiente.
 - Valor con más de 2 decimales o más de 12 dígitos: pendiente.
-- Categoría de gasto desconocida: pendiente.
-- Categoría de ingreso según decisión pendiente: pendiente o se conserva.
+- Tipo de gasto desconocido: pendiente.
+- Categoría de ingreso opcional: se conserva si está presente.
 - Fila duplicada: pendiente con advertencia.
 - Archivo repetido: sus filas se comparan con importaciones anteriores y se marcan como posibles duplicados.
 - Fila válida e inválida en el mismo archivo: las válidas se contabilizan; las inválidas quedan pendientes.
 - Fallo de base de datos durante la importación: rollback del lote completo.
 - Fallo al contabilizar: no se crea el movimiento ni se marca la fila.
 - Contabilización concurrente: una operación gana; la otra recibe `409`.
-- Movimiento importado eliminado: la fila conserva su estado de importada; no se reencola automáticamente.
+- Movimiento importado eliminado: la fila conserva su estado `IMPORTADO` y la referencia al movimiento queda nula; no se reencola automáticamente.
 - Movimiento importado editado: la fila no se modifica automáticamente.
 - Error de red al cargar el indicador: la interfaz muestra error; no inventa un conteo.
 - Nginx con límite de cuerpo menor que el archivo: se devuelve un error controlado; el límite debe configurarse de forma coherente.
@@ -501,10 +504,13 @@ Cada regla de importación, persistencia, contabilización, descarte, duplicado 
 | AC-014 | Las pantallas de importación y pendientes son accesibles y responsive. | Pruebas de componentes y revisión visual. |
 | AC-015 | Las pruebas y validaciones de backend y frontend pasan. | Comandos canónicos. |
 | AC-016 | La documentación refleja el contrato y los límites aprobados. | Revisión de README, AGENTS y esta especificación. |
+| AC-017 | Todos los pendientes globales se pueden descartar en una sola operación. | Pruebas de API y frontend con confirmación. |
+| AC-018 | En gastos, `Categoría` y `Tipo de gasto` son el mismo campo y `Categoría` funciona como alias. | Pruebas de parser, API y componente. |
+| AC-019 | Un gasto o ingreso importado se puede eliminar; la fila de importación conserva `IMPORTADO` y su referencia queda nula. | Pruebas de API e integración de gastos e ingresos importados. |
 
 ## 10. Decisiones de negocio y supuestos
 
-Las decisiones D-001 a D-012 fueron revisadas y aprobadas. Se conservan las alternativas e impactos como contexto para la implementación.
+Las decisiones D-001 a D-013 fueron revisadas y aprobadas. Se conservan las alternativas e impactos como contexto para la implementación.
 
 ### D-001 — Tipo de movimiento por archivo
 
@@ -528,13 +534,13 @@ Las decisiones D-001 a D-012 fueron revisadas y aprobadas. Se conservan las alte
 
 ### D-003 — Categoría de los gastos
 
-**Propuesta:** `Categoría` se normaliza a `tipo` (`NECESARIO`, `NO_NECESARIO`, `INVERSION`); no se añade una categoría libre a `gastos`.
+**Propuesta:** `Categoría` en gastos es el mismo campo que `Tipo de gasto`; se normaliza a `tipo` (`NECESARIO`, `NO_NECESARIO`, `INVERSION`). No se añade una categoría libre a `gastos`.
 
 **Alternativas:** añadir `categoria` libre a `gastos`; usar una tabla de categorías; aceptar solo valores exactos.
 
 **Impacto:** normalización, pendientes y modelo de gastos.
 
-**Decisión aprobada:** se acepta la propuesta.
+**Decisión aprobada:** se acepta la propuesta y se confirma que `Categoría` es el mismo campo que `Tipo de gasto`. `Categoría` se acepta como alias de cabecera.
 
 ### D-004 — Contabilización automática de filas completas
 
@@ -578,13 +584,13 @@ Las decisiones D-001 a D-012 fueron revisadas y aprobadas. Se conservan las alte
 
 ### D-008 — Movimiento importado editado o eliminado
 
-**Propuesta:** la fila de importación conserva su estado y auditoría; no se reencola automáticamente. Si el movimiento se elimina, la referencia puede quedar nula.
+**Propuesta:** la fila de importación conserva su estado y auditoría; no se reencola automáticamente. Si el movimiento se elimina, la referencia queda nula.
 
 **Alternativas:** reencolar el pendiente al eliminar; borrar la fila de importación; impedir la eliminación.
 
-**Impacto:** integridad referencial y comportamiento del usuario.
+**Impacto:** integridad referencial, restricción de referencia y comportamiento del usuario.
 
-**Decisión aprobada:** se acepta la propuesta.
+**Decisión aprobada:** se acepta la propuesta. La restricción de integridad debe permitir que una fila `IMPORTADO` quede sin referencia después de eliminar su movimiento; la fila no cambia de estado.
 
 ### D-009 — Límites de archivo
 
@@ -632,6 +638,16 @@ Las decisiones D-001 a D-012 fueron revisadas y aprobadas. Se conservan las alte
 
 **Visión futura del historial:** en una especificación posterior, el historial mostrará los lotes ordenados por fecha descendente, con nombre de archivo, tipo de movimiento, total de filas, filas importadas, pendientes y descartadas. Permitirá abrir un lote para consultar sus filas y volver a los pendientes que sigan abiertos. No incluirá edición masiva ni reimportación automática.
 
+### D-013 — Descarte masivo global
+
+**Propuesta:** añadir un botón `Descartar todo` que descarte globalmente todos los pendientes, con confirmación y sin crear ni eliminar movimientos.
+
+**Alternativas:** descartar solo un lote; descartar solo los pendientes visibles; no incluir la acción.
+
+**Impacto:** endpoint de descarte masivo, contadores de lotes, vista de pendientes y pruebas.
+
+**Decisión aprobada:** se acepta la propuesta; el descarte es global y lógico.
+
 ### Supuestos técnicos que no requieren decisión de negocio
 
 - Se usa `Decimal` y `NUMERIC(12, 2)`.
@@ -645,8 +661,34 @@ Las decisiones D-001 a D-012 fueron revisadas y aprobadas. Se conservan las alte
 
 ### Estado de las decisiones
 
-No quedan preguntas de negocio pendientes. Las decisiones D-001 a D-012 están aprobadas; el plan y las tareas también están aprobados. La implementación avanza por tareas.
+No quedan preguntas de negocio pendientes. Las decisiones D-001 a D-013 están aprobadas; el plan y las tareas también están aprobados. Las revisiones 2 y 3 quedaron validadas.
 
 ## 11. Resultado de validación
 
-Pendiente. Se completa al implementar y validar la especificación.
+La versión original fue validada el 2026-10-29 con 228 pruebas de backend y 72 de frontend, migraciones `0004`/`0005` y smoke test de producción.
+
+La revisión 2 fue validada el 2026-10-31 con 230 pruebas de backend y 77 de frontend, sin migraciones nuevas, y con la entrega de producción reconstruida y su smoke test aprobado. El descarte masivo global quedó cubierto por pruebas de API e integración.
+
+La revisión 3 fue validada el 2026-10-31 con 232 pruebas de backend, migración `0006` y smoke test de producción. La eliminación de gastos e ingresos importados conserva la fila de importación con referencia nula y estado `IMPORTADO`.
+
+## 12. Revisión 2 — Categoría de gastos y descarte masivo
+
+Esta revisión corrige la semántica de la columna de gastos y añade una acción de descarte global.
+
+- En gastos, `Categoría` y `Tipo de gasto` son el mismo concepto.
+- `Categoría` se acepta como alias de cabecera; `Tipo de gasto` es el nombre recomendado.
+- No existe una categoría libre editable para gastos; el valor original se conserva solo para auditoría.
+- En ingresos se mantiene `Categoría` como campo opcional.
+- La vista de pendientes muestra `Categoría` solo para ingresos y `Tipo de gasto` solo para gastos.
+- `Descartar todo` descarta globalmente todos los pendientes con confirmación, sin crear ni eliminar movimientos.
+- Las tareas de implementación T-017 a T-020 están completadas y validadas.
+
+## 13. Revisión 3 — Eliminación de movimientos importados
+
+Esta revisión corrige la eliminación de gastos e ingresos procedentes de una importación.
+
+- Al eliminar un movimiento importado, la FK `ON DELETE SET NULL` deja la referencia nula.
+- La fila de importación conserva el estado `IMPORTADO` y no se reencola, según D-008.
+- La restricción `ck_filas_importacion_referencia_movimiento` debe permitir una fila `IMPORTADO` sin referencia.
+- La corrección requiere la migración `0006`; no se modifica el contrato de la API ni el frontend.
+- La tarea T-021 está completada y validada.

@@ -1,6 +1,6 @@
 # Plan técnico 007 — Importación de ingresos y gastos desde Excel y CSV
 
-- Estado: aprobado.
+- Estado: aprobado (revisión 3 implementada).
 - Especificación: [`spec.md`](spec.md).
 - Fase: 5.
 - Iteración: MVP+.
@@ -36,7 +36,7 @@ Normalización y validación
 
 Los pendientes viven en tablas distintas de `ingresos` y `gastos`; por tanto, no alteran el resumen. La interfaz muestra una pantalla de importación y otra de pendientes, con un indicador obtenido del backend.
 
-El plan base incorpora las decisiones aprobadas D-001 a D-012 de la especificación.
+El plan base incorpora las decisiones aprobadas D-001 a D-013 de la especificación.
 
 ## 2. Arquitectura y flujo de datos
 
@@ -158,13 +158,46 @@ Según D-002 aprobada:
 
 La categoría de ingresos es opcional: no se exige al crear ni editar un ingreso.
 
-### 4.4 Migraciones
+### 4.4 Categoría de gastos
+
+En gastos, `Categoría` es el mismo campo que `Tipo de gasto`:
+
+- El parser conserva el valor original en `filas_importacion.categoria` para auditoría.
+- El servicio normaliza ese valor a `filas_importacion.tipo_gasto`.
+- `Categoría` se acepta como alias de cabecera; `Tipo de gasto` es el nombre recomendado.
+- No se expone una categoría libre editable para gastos en la bandeja.
+- La categoría de ingresos sigue siendo un campo opcional independiente (D-002).
+
+No se requiere migración de esquema para esta corrección.
+
+### 4.5 Migraciones
 
 - `0004_create_import_tables`: crea `lotes_importacion` y `filas_importacion`, constraints e índices.
 - `0005_add_income_category`: añade `categoria` opcional a `ingresos` (D-002 aprobada).
-- Ambas migraciones deben tener `upgrade` y `downgrade` funcionales.
+- Las migraciones de importación deben tener `upgrade` y `downgrade` funcionales.
 - La suite de integración aplica Alembic a la base de test.
 - No se modifica el esquema con `create_all`.
+
+### 4.6 Eliminación de movimientos importados
+
+Según D-008, al eliminar un movimiento importado la fila de importación conserva el estado `IMPORTADO` y su referencia queda nula. La FK ya usa `ON DELETE SET NULL`, pero la restricción actual exige una referencia para las filas importadas.
+
+La migración `0006_allow_imported_without_movement` debe:
+
+- Eliminar `ck_filas_importacion_referencia_movimiento`.
+- Recrearla permitiendo que una fila `IMPORTADO` tenga cero o una referencia, nunca dos, y manteniendo las filas no importadas sin referencias.
+- Actualizar la definición equivalente en `ImportRow.__table_args__`.
+- Restaurar la restricción anterior en `downgrade`. Si existen filas importadas huérfanas, el downgrade debe detenerse con un error explícito en lugar de modificar datos.
+
+Expresión propuesta:
+
+```text
+(movimiento_ingreso_id IS NULL OR movimiento_gasto_id IS NULL)
+AND (
+  estado = 'IMPORTADO'
+  OR (movimiento_ingreso_id IS NULL AND movimiento_gasto_id IS NULL)
+)
+```
 
 ## 5. Contrato de API
 
@@ -240,19 +273,18 @@ Cuenta solo filas `PENDIENTE`. La ruta debe declararse antes de `/{pending_id}`.
 
 ### 5.4 `PUT /api/importaciones/pendientes/{pending_id}`
 
-Cuerpo:
+Cuerpo para un gasto:
 
 ```json
 {
   "fecha": "2026-10-21",
   "descripcion": "Mercado",
   "valor": "120.50",
-  "categoria": "necesario",
   "tipo_gasto": "NECESARIO"
 }
 ```
 
-Todos los campos son opcionales; los ausentes conservan su valor. El servidor revalida y devuelve la fila con errores actualizados.
+Para un ingreso se usa `categoria` en lugar de `tipo_gasto`. Todos los campos son opcionales; los ausentes conservan su valor. El servidor revalida y devuelve la fila con errores actualizados. Para gastos, `categoria` se acepta como alias de `tipo_gasto` por compatibilidad.
 
 - `200`: actualización guardada, aunque queden errores (D-006 aprobada).
 - `404`: pendiente inexistente.
@@ -296,6 +328,22 @@ La respuesta concreta se definirá en el schema Pydantic; el frontend solo neces
 
 No se borra físicamente la fila (D-007 aprobada).
 
+### 5.7 `DELETE /api/importaciones/pendientes`
+
+Descarta globalmente todas las filas pendientes.
+
+Respuesta `200`:
+
+```json
+{"descartados": 12}
+```
+
+- Aplica descarte lógico a todas las filas `PENDIENTE`.
+- No crea ni elimina movimientos.
+- Actualiza los contadores de todos los lotes afectados.
+- Requiere confirmación en la interfaz.
+- Si no hay pendientes, devuelve `{"descartados": 0}`.
+
 ## 6. Schemas Pydantic
 
 Ubicación: `app/api/schemas/imports.py`.
@@ -305,6 +353,7 @@ Ubicación: `app/api/schemas/imports.py`.
 - `PendingUpdate`.
 - `PendingCount`.
 - `PendingCommitResponse`.
+- `BulkDiscardRead` con `descartados`.
 - `ValidationIssue` con `campo` y `mensaje`.
 - `ImportMovementType` con `INGRESO`/`GASTO`.
 - `ImportRowStatus` con `PENDIENTE`/`IMPORTADO`/`DESCARTADO`.
@@ -353,7 +402,7 @@ Los límites serán constantes configurables en el servicio, con valores inicial
   - `fecha`, `date`.
   - `descripcion`, `descripción`, `detalle`.
   - `valor`, `monto`, `importe`.
-  - `categoria`, `categoría`, `tipo`.
+  - `tipo de gasto`, `tipo_gasto`, `categoria`, `categoría`, `tipo`.
 - Rechazar cabeceras ambiguas o duplicadas.
 - Ignorar columnas adicionales.
 
@@ -362,7 +411,7 @@ Los límites serán constantes configurables en el servicio, con valores inicial
 - Fecha: ISO `YYYY-MM-DD`, `DD/MM/YYYY` o celda de fecha de Excel.
 - Descripción: recortar, mínimo 1 y máximo 200.
 - Valor: `Decimal` mayor que 0, máximo 12 dígitos y 2 decimales.
-- Categoría de gasto: normalizar y mapear a `NECESARIO`, `NO_NECESARIO` o `INVERSION`.
+- Tipo de gasto: normalizar y mapear a `NECESARIO`, `NO_NECESARIO` o `INVERSION`; los errores usan el campo `tipo_gasto`.
 - Categoría de ingreso: opcional, máximo 100 caracteres (D-002 aprobada).
 - Errores por campo, con mensajes en español.
 - Una fila con errores queda `PENDIENTE`.
@@ -427,6 +476,19 @@ Dos solicitudes concurrentes no deben crear dos movimientos. La segunda recibe `
 4. Recalcular contadores.
 5. Confirmar.
 
+### Descarte masivo
+
+1. Actualizar en una transacción todas las filas `PENDIENTE` a `DESCARTADO`.
+2. Recalcular los contadores de cada lote afectado.
+3. Confirmar y devolver el número de filas descartadas.
+
+### Eliminación de movimiento importado
+
+1. Eliminar el movimiento de `gastos` o `ingresos`.
+2. La FK `ON DELETE SET NULL` deja nula la referencia en `filas_importacion`.
+3. La fila conserva `estado = 'IMPORTADO'` y no se reencola.
+4. No se recalculan los contadores del lote; la fila sigue contando como importada.
+
 ## 9. Cambios en el frontend
 
 ### 9.1 Navegación
@@ -461,11 +523,12 @@ No se usa router.
 `PendingView`:
 
 - Lista de pendientes.
-- Campos editables: fecha, descripción, valor, categoría y tipo de gasto cuando aplique.
+- Campos editables: fecha, descripción y valor; `Categoría` para ingresos; `Tipo de gasto` para gastos.
 - Errores por campo.
 - Botón `Guardar`.
 - Botón `Contabilizar`, deshabilitado si hay errores.
 - Botón `Descartar` con confirmación.
+- Botón `Descartar todo` global, con confirmación y conteo de pendientes.
 - Estado vacío.
 - Tabla responsive con acciones accesibles.
 
@@ -518,7 +581,7 @@ El límite debe ser mayor que el máximo de archivo permitido y coherente con el
 - Decodificación UTF-8 con BOM y rechazo de otras codificaciones.
 - Alias de cabeceras y cabeceras faltantes.
 - Conversión de fechas y valores.
-- Normalización de categorías de gasto.
+- Normalización de tipos de gasto.
 - Validación de descripción y límites.
 - Huella de duplicados.
 - Límites de tamaño y filas.
@@ -529,7 +592,7 @@ El límite debe ser mayor que el máximo de archivo permitido y coherente con el
 - Carga CSV y XLSX con `TestClient`.
 - Respuestas `201`, `413`, `415`, `422`.
 - Listado y conteo de pendientes.
-- Actualización, contabilización y descarte.
+- Actualización, contabilización y descarte individual y masivo.
 - `404`, `409`, `422`.
 - OpenAPI de las rutas nuevas.
 
@@ -542,6 +605,8 @@ El límite debe ser mayor que el máximo de archivo permitido y coherente con el
 - Transacción y rollback.
 - Doble contabilización y concurrencia.
 - Migración `0004`/`0005` y downgrade.
+- Eliminación de gastos e ingresos importados con referencia nula y estado `IMPORTADO`.
+- Migración `0006` y downgrade en una base sin filas huérfanas.
 - Categoría de ingresos (D-002 aprobada).
 
 ### Frontend
@@ -601,34 +666,35 @@ WEB_PORT=3001 ./scripts/smoke.sh
 | FR-001 | 5.1, 7.1, 9.2 | T-006, T-010, T-013, T-014 |
 | FR-002 | 7.2, 7.3, 7.4 | T-003, T-004, T-005, T-006 |
 | FR-003 | 7.5 | T-003, T-004, T-005, T-014 |
-| FR-004 | 7.4, 7.5, 4.3 | T-002, T-003, T-006 |
+| FR-004 | 7.4, 7.5, 4.3, 4.4 | T-002, T-003, T-006, T-017 |
 | FR-005 | 7.5, 8 | T-006, T-014 |
 | FR-006 | 4.1, 4.2, 8 | T-001, T-006, T-014 |
 | FR-007 | 8 | T-006, T-014 |
 | FR-008 | 5.2, 9.3 | T-007, T-011, T-012 |
-| FR-009 | 5.4, 8, 9.3 | T-008, T-011 |
+| FR-009 | 5.4, 8, 9.3 | T-008, T-011, T-017, T-019 |
 | FR-010 | 5.5, 8, 9.3 | T-008, T-011 |
-| FR-011 | 5.6, 8, 9.3 | T-008, T-011 |
+| FR-011 | 5.6, 5.7, 8, 9.3 | T-008, T-011, T-018, T-019 |
 | FR-012 | 5.3, 9.1, 9.4 | T-007, T-012, T-015 |
 | FR-013 | 8, 11 | T-008, T-014 |
 | FR-014 | 7.6 | T-003, T-006, T-014 |
 | FR-015 | 7.1, 8, 5 | T-006, T-014 |
 | FR-016 | 7.1, 10 | T-006, T-013, T-014 |
-| FR-017 | 9 | T-010, T-011, T-012, T-015 |
+| FR-017 | 9 | T-010, T-011, T-012, T-015, T-019 |
 | NFR-001 | 4.2, 7.5 | T-001, T-003, T-014 |
-| NFR-002 | 8 | T-001, T-006, T-008, T-014 |
+| NFR-002 | 8 | T-001, T-006, T-008, T-014, T-018 |
 | NFR-003 | 7.1, 10 | T-006, T-013, T-014 |
 | NFR-004 | 7.1, 10 | T-006, T-013, T-014 |
 | NFR-005 | 9 | T-010, T-011, T-012, T-015 |
-| NFR-006 | 3, 4 | T-001 a T-016 |
-| NFR-007 | 7, 8, 12 | T-006, T-008, T-014 |
+| NFR-006 | 3, 4 | T-001 a T-021 |
+| NFR-007 | 7, 8, 12 | T-006, T-008, T-014, T-021 |
 | NFR-008 | 4.3, 5, 11 | T-002, T-009, T-014 |
 | NFR-009 | 10 | T-013 |
-| NFR-010 | 11 | T-014, T-015, T-016 |
+| NFR-010 | 11 | T-014, T-015, T-016, T-020, T-021 |
+| AC-019 | 4.6, 8, 11 | T-021 |
 
 ## 14. Aprobación y siguiente paso
 
-Las decisiones D-001 a D-012 y el plan están aprobados. La implementación avanza por las tareas de `tasks.md`.
+Las decisiones D-001 a D-013 y el plan están aprobados. La revisión 2 quedó implementada y validada en T-017 a T-020. La revisión 3 quedó implementada y validada en T-021.
 
 El historial de importaciones queda fuera de alcance de la especificación 007. Según D-012, en una especificación posterior mostrará los lotes ordenados por fecha descendente, con nombre de archivo, tipo de movimiento, total de filas, importadas, pendientes y descartadas; permitirá abrir un lote para consultar sus filas y volver a los pendientes abiertos.
 

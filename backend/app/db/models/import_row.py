@@ -57,10 +57,9 @@ class ImportRow(Base):
             name="ck_filas_importacion_gasto_coherente",
         ),
         CheckConstraint(
-            "(estado = 'IMPORTADO' AND ((movimiento_ingreso_id IS NOT NULL) <> "
-            "(movimiento_gasto_id IS NOT NULL))) OR "
-            "(estado <> 'IMPORTADO' AND movimiento_ingreso_id IS NULL AND "
-            "movimiento_gasto_id IS NULL)",
+            "(movimiento_ingreso_id IS NULL OR movimiento_gasto_id IS NULL) AND "
+            "(estado = 'IMPORTADO' OR "
+            "(movimiento_ingreso_id IS NULL AND movimiento_gasto_id IS NULL))",
             name="ck_filas_importacion_referencia_movimiento",
         ),
         UniqueConstraint(

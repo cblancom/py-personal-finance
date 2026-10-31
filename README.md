@@ -8,7 +8,7 @@ El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, y la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -165,6 +165,8 @@ La interfaz de una sola página permite:
 - Crear, editar y eliminar ingresos desde la pestaña `Ingresos`.
 - Crear, editar y eliminar gastos con tipo desde la pestaña `Gastos`.
 - Ver estados de carga, error con reintento, listas vacías y confirmación antes de eliminar.
+- Importar ingresos o gastos desde archivos CSV/XLSX.
+- Revisar, corregir, contabilizar o descartar registros pendientes, individualmente o todos a la vez.
 - Leer importes en COP con formato `es-CO` y fechas en formato local.
 
 Los formularios validan los datos antes de enviarlos. Los errores se muestran en español sin detalles técnicos.
@@ -280,6 +282,61 @@ Reglas:
 - `gastos_por_tipo` incluye siempre los tres tipos, con `"0.00"` cuando no hay movimientos.
 - `total_gastos` coincide con la suma del desglose.
 - Todos los importes son strings con dos decimales.
+
+## API de importación
+
+La importación acepta archivos `.csv` y `.xlsx` de hasta 10 MiB y 5.000 filas. Cada archivo contiene un solo tipo de movimiento: `INGRESO` o `GASTO`.
+
+En desarrollo, la API está en `http://localhost:8000`; en producción, en `http://127.0.0.1:3001`, detrás de Nginx.
+
+### Cargar un archivo
+
+`POST /api/importaciones` con `multipart/form-data`:
+
+| Campo | Valor |
+|---|---|
+| `archivo` | Archivo CSV o XLSX |
+| `tipo_movimiento` | `INGRESO` o `GASTO` |
+
+Respuesta `201`:
+
+```json
+{
+  "id": 1,
+  "nombre_archivo": "movimientos.csv",
+  "tipo_archivo": "CSV",
+  "tipo_movimiento": "GASTO",
+  "tamano_bytes": 1200,
+  "total_filas": 20,
+  "filas_importadas": 17,
+  "filas_pendientes": 3,
+  "filas_descartadas": 0,
+  "created_at": "2026-10-29T12:00:00Z"
+}
+```
+
+Las filas completas se incorporan a la contabilidad. Las filas incompletas, inválidas o posiblemente duplicadas quedan pendientes. Los pendientes no afectan el resumen.
+
+Si se elimina un gasto o ingreso importado, la fila de importación conserva el estado `IMPORTADO` y su referencia al movimiento queda nula; no se reencola automáticamente.
+
+Para gastos, `Tipo de gasto` se normaliza a `NECESARIO`, `NO_NECESARIO` o `INVERSION`; `Categoría` se acepta como alias de la misma columna. Para ingresos, la categoría es opcional.
+
+Errores:
+
+- `413`: archivo demasiado grande.
+- `415`: extensión o tipo de contenido no permitido.
+- `422`: archivo vacío, cabeceras faltantes, codificación no válida o estructura incorrecta.
+
+### Consultar y gestionar pendientes
+
+- `GET /api/importaciones/pendientes`: lista los pendientes.
+- `GET /api/importaciones/pendientes/count`: devuelve `{"pendientes": n}`.
+- `PUT /api/importaciones/pendientes/{id}`: actualiza fecha, descripción y valor; para gastos usa `tipo_gasto`, para ingresos `categoria`.
+- `POST /api/importaciones/pendientes/{id}/contabilizar`: revalida y crea el movimiento.
+- `DELETE /api/importaciones/pendientes/{id}`: descarta lógicamente el pendiente.
+- `DELETE /api/importaciones/pendientes`: descarta globalmente todos los pendientes y devuelve `{"descartados": n}`. Es idempotente y no crea ni elimina movimientos.
+
+La contabilización devuelve `404` si no existe, `409` si ya fue contabilizado o descartado y `422` si todavía tiene errores.
 
 ## Desarrollo local
 

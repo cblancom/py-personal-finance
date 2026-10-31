@@ -27,6 +27,8 @@ def test_canonical_header_maps_aliases():
     assert canonical_header("date") == "fecha"
     assert canonical_header("Monto") == "valor"
     assert canonical_header("tipo") == "categoria"
+    assert canonical_header("Tipo de gasto") == "categoria"
+    assert canonical_header("tipo_gasto") == "categoria"
     assert canonical_header("desconocida") is None
 
 

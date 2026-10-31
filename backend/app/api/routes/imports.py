@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.schemas.imports import (
     ImportBatchRead,
     ImportPendingCountRead,
+    ImportPendingDiscardRead,
     ImportPendingRowRead,
     ImportPendingUpdate,
     ImportRowError,
@@ -23,6 +24,7 @@ from app.services.imports.limits import MAX_IMPORT_BYTES
 from app.services.imports.pending import (
     commit_pending,
     count_pending,
+    discard_all_pending,
     discard_pending,
     list_pending,
     update_pending,
@@ -116,6 +118,13 @@ def get_pending_rows(db: Annotated[Session, Depends(get_db)]) -> list[ImportPend
 @router.get("/pendientes/count", response_model=ImportPendingCountRead)
 def get_pending_count(db: Annotated[Session, Depends(get_db)]) -> ImportPendingCountRead:
     return ImportPendingCountRead(pendientes=count_pending(db))
+
+
+@router.delete("/pendientes", response_model=ImportPendingDiscardRead)
+def discard_all_pending_rows(
+    db: Annotated[Session, Depends(get_db)],
+) -> ImportPendingDiscardRead:
+    return ImportPendingDiscardRead(descartados=discard_all_pending(db))
 
 
 @router.put("/pendientes/{pending_id}", response_model=ImportPendingRowRead)

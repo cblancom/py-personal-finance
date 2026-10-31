@@ -23,4 +23,4 @@ def test_tables_and_migration_are_ready(test_engine: Engine):
     with test_engine.connect() as connection:
         version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
 
-    assert version == "0005"
+    assert version == "0006"

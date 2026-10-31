@@ -64,8 +64,8 @@ def test_expense_category_is_required():
     )
 
     assert not row.is_valid
-    assert [issue.field for issue in row.errors] == ["categoria"]
-    assert row.errors[0].message == "La categoría es obligatoria para gastos."
+    assert [issue.field for issue in row.errors] == ["tipo_gasto"]
+    assert row.errors[0].message == "El tipo de gasto es obligatorio."
 
 
 def test_expense_category_must_be_known():
@@ -78,7 +78,8 @@ def test_expense_category_must_be_known():
     )
 
     assert not row.is_valid
-    assert row.errors[0].message == "La categoría del gasto no es válida."
+    assert row.errors[0].field == "tipo_gasto"
+    assert row.errors[0].message == "El tipo de gasto no es válido."
 
 
 def test_invalid_fields_are_collected_without_fingerprint():
@@ -95,7 +96,7 @@ def test_invalid_fields_are_collected_without_fingerprint():
         "fecha",
         "descripcion",
         "valor",
-        "categoria",
+        "tipo_gasto",
     ]
     assert row.fingerprint is None
 

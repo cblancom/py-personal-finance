@@ -238,7 +238,7 @@ def import_file(
                 )
             else:
                 if validated.expense_type is None:
-                    raise ImportFileError("La categoría del gasto no es válida.")
+                    raise ImportFileError("El tipo de gasto no es válido.")
                 movement_row = Expense(
                     date=validated.date,
                     description=validated.description,

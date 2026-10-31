@@ -2,6 +2,7 @@ import type {
   ImportBatch,
   ImportMovementType,
   ImportPendingCount,
+  ImportPendingDiscard,
   ImportPendingRow,
   ImportPendingUpdate,
 } from '../types/import'
@@ -51,6 +52,12 @@ export function commitPending(id: number): Promise<ImportPendingRow> {
 
 export function discardPending(id: number): Promise<void> {
   return request<void>(`/api/importaciones/pendientes/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function discardAllPending(): Promise<ImportPendingDiscard> {
+  return request<ImportPendingDiscard>('/api/importaciones/pendientes', {
     method: 'DELETE',
   })
 }

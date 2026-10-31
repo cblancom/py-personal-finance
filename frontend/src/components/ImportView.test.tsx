@@ -102,4 +102,39 @@ describe('ImportView', () => {
 
     expect(onBack).toHaveBeenCalled()
   })
+
+  it.each([
+    [413, 'El archivo es demasiado grande.'],
+    [422, 'El archivo no tiene el formato esperado.'],
+  ])('maps HTTP %s to a clear message', async (status, message) => {
+    uploadImportMock.mockRejectedValue(new ApiError(status))
+    render(<ImportView onBack={vi.fn()} onImported={vi.fn()} />)
+
+    selectFile()
+    fireEvent.click(screen.getByRole('button', { name: 'Importar archivo' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+  })
+
+  it('disables the submit button while importing', async () => {
+    let resolveImport: (value: ImportBatch) => void = () => undefined
+    uploadImportMock.mockReturnValue(
+      new Promise<ImportBatch>((resolve) => {
+        resolveImport = resolve
+      }),
+    )
+    render(<ImportView onBack={vi.fn()} onImported={vi.fn()} />)
+
+    selectFile()
+    fireEvent.click(screen.getByRole('button', { name: 'Importar archivo' }))
+
+    expect(
+      screen.getByRole('button', { name: 'Importando...' }),
+    ).toBeDisabled()
+
+    resolveImport(batch)
+    expect(
+      await screen.findByRole('heading', { name: 'Resultado de la importación' }),
+    ).toBeInTheDocument()
+  })
 })

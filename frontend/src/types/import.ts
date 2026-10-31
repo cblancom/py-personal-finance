@@ -42,6 +42,10 @@ export interface ImportPendingCount {
   pendientes: number
 }
 
+export interface ImportPendingDiscard {
+  descartados: number
+}
+
 export interface ImportPendingUpdate {
   fecha?: string | null
   descripcion?: string | null

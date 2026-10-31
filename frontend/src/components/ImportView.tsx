@@ -75,8 +75,8 @@ export function ImportView({
         <div>
           <h2 id="import-title">Importar movimientos</h2>
           <p>
-            Sube un archivo CSV o XLSX con fecha, descripción, valor y
-            categoría.
+            Sube un archivo CSV o XLSX con fecha, descripción, valor y tipo de
+            gasto. En ingresos, la categoría es opcional.
           </p>
         </div>
         <button type="button" className="button button--ghost" onClick={onBack}>

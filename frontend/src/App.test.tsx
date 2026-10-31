@@ -34,6 +34,7 @@ vi.mock('./api/imports', () => ({
   updatePending: vi.fn(),
   commitPending: vi.fn(),
   discardPending: vi.fn(),
+  discardAllPending: vi.fn(),
 }))
 
 const getSummaryMock = vi.mocked(getSummary)

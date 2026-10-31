@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import ImportRow, ImportRowStatus
+from app.db.models import ImportBatch, ImportRow, ImportRowStatus
 
 pytestmark = pytest.mark.integration
 
@@ -86,7 +86,112 @@ def test_import_csv_expense_with_pending_row(
             ImportRowStatus.IMPORTED.value,
             ImportRowStatus.PENDING.value,
         ]
-        assert rows[1].errors[0]["campo"] == "categoria"
+        assert rows[1].errors[0]["campo"] == "tipo_gasto"
+
+
+def test_expense_header_accepts_tipo_de_gasto_alias(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+):
+    content = "Fecha,Descripcion,Valor,Tipo de gasto\n2026-10-21,Mercado,120.50,No Necesario\n"
+
+    response = post_csv(client, content, movement_type="GASTO")
+
+    assert response.status_code == 201
+    assert response.json()["filas_importadas"] == 1
+
+    with test_session_factory() as session:
+        row = session.scalars(select(ImportRow)).one()
+        assert row.category == "No Necesario"
+        assert row.expense_type == "NO_NECESARIO"
+
+
+def test_delete_imported_expense_keeps_import_row(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+):
+    content = HEADER + "2026-10-21,Mercado,120.50,No Necesario\n"
+    imported = post_csv(client, content, movement_type="GASTO")
+    assert imported.status_code == 201
+    expense = client.get("/api/gastos").json()[0]
+
+    response = client.delete(f"/api/gastos/{expense['id']}")
+
+    assert response.status_code == 204
+    assert client.get("/api/gastos").json() == []
+    assert client.get("/api/resumen").json()["total_gastos"] == "0.00"
+
+    with test_session_factory() as session:
+        row = session.scalars(select(ImportRow)).one()
+        assert row.status == ImportRowStatus.IMPORTED.value
+        assert row.expense_id is None
+        assert row.income_id is None
+        batch = session.get(ImportBatch, imported.json()["id"])
+        assert batch is not None
+        assert batch.imported_rows == 1
+
+
+def test_delete_imported_income_keeps_import_row(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+):
+    content = HEADER + "2026-10-21,Salario,1500.50,Nómina\n"
+    imported = post_csv(client, content)
+    assert imported.status_code == 201
+    income = client.get("/api/ingresos").json()[0]
+
+    response = client.delete(f"/api/ingresos/{income['id']}")
+
+    assert response.status_code == 204
+    assert client.get("/api/ingresos").json() == []
+    assert client.get("/api/resumen").json()["total_ingresos"] == "0.00"
+
+    with test_session_factory() as session:
+        row = session.scalars(select(ImportRow)).one()
+        assert row.status == ImportRowStatus.IMPORTED.value
+        assert row.expense_id is None
+        assert row.income_id is None
+        batch = session.get(ImportBatch, imported.json()["id"])
+        assert batch is not None
+        assert batch.imported_rows == 1
+
+
+def test_import_with_only_pending_rows_does_not_affect_summary(client: TestClient):
+    content = HEADER + "2026-10-21,Mercado,120.50,\n" + "2026-10-22,Cine,45.00,\n"
+
+    response = post_csv(client, content, movement_type="GASTO")
+
+    assert response.status_code == 201
+    assert response.json()["filas_importadas"] == 0
+    assert response.json()["filas_pendientes"] == 2
+    summary = client.get("/api/resumen").json()
+    assert summary["total_ingresos"] == "0.00"
+    assert summary["total_gastos"] == "0.00"
+    assert summary["balance"] == "0.00"
+
+
+def test_duplicate_within_the_same_file_is_left_pending(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+):
+    content = HEADER + "2026-10-21,Salario,100.00,Nómina\n" + "2026-10-21,Salario,100.00,Nómina\n"
+
+    response = post_csv(client, content)
+
+    assert response.status_code == 201
+    assert response.json()["filas_importadas"] == 1
+    assert response.json()["filas_pendientes"] == 1
+    assert client.get("/api/resumen").json()["total_ingresos"] == "100.00"
+
+    with test_session_factory() as session:
+        batch = session.scalars(select(ImportBatch)).one()
+        assert batch.imported_rows == 1
+        assert batch.pending_rows == 1
+        pending = session.scalars(
+            select(ImportRow).where(ImportRow.status == ImportRowStatus.PENDING.value)
+        ).one()
+        assert pending.possible_duplicate is True
+        assert pending.duplicate_of_id is not None
 
 
 def test_import_xlsx_income(client: TestClient):
@@ -195,7 +300,7 @@ def test_list_pending_rows_and_count(client: TestClient):
     assert pending["numero_fila"] == 2
     assert pending["tipo_movimiento"] == "GASTO"
     assert pending["estado"] == "PENDIENTE"
-    assert pending["errores"][0]["campo"] == "categoria"
+    assert pending["errores"][0]["campo"] == "tipo_gasto"
     assert client.get("/api/importaciones/pendientes/count").json() == {"pendientes": 1}
 
 
@@ -245,7 +350,7 @@ def test_commit_invalid_pending_returns_422(client: TestClient):
     response = client.post(f"/api/importaciones/pendientes/{pending['id']}/contabilizar")
 
     assert response.status_code == 422
-    assert response.json()["detail"]["errores"][0]["campo"] == "categoria"
+    assert response.json()["detail"]["errores"][0]["campo"] == "tipo_gasto"
     assert client.get("/api/importaciones/pendientes/count").json() == {"pendientes": 1}
 
 
@@ -258,6 +363,48 @@ def test_discard_pending_row(client: TestClient):
     assert client.get("/api/importaciones/pendientes/count").json() == {"pendientes": 0}
     assert client.get("/api/gastos").json() == []
     assert client.get("/api/resumen").json()["total_gastos"] == "0.00"
+
+
+def test_discard_all_pending_rows(
+    client: TestClient,
+    test_session_factory: sessionmaker[Session],
+):
+    first = post_csv(
+        client,
+        HEADER + "2026-10-21,Mercado,120.50,\n",
+        movement_type="GASTO",
+    )
+    second = post_csv(
+        client,
+        HEADER + "2026-10-22,Cine,45.00,\n",
+        movement_type="GASTO",
+    )
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert client.get("/api/importaciones/pendientes/count").json() == {"pendientes": 2}
+
+    response = client.delete("/api/importaciones/pendientes")
+
+    assert response.status_code == 200
+    assert response.json() == {"descartados": 2}
+    assert client.get("/api/importaciones/pendientes").json() == []
+    assert client.get("/api/importaciones/pendientes/count").json() == {"pendientes": 0}
+    assert client.get("/api/gastos").json() == []
+    assert client.get("/api/resumen").json()["total_gastos"] == "0.00"
+
+    with test_session_factory() as session:
+        rows = session.scalars(select(ImportRow).order_by(ImportRow.id)).all()
+        assert [row.status for row in rows] == [
+            ImportRowStatus.DISCARDED.value,
+            ImportRowStatus.DISCARDED.value,
+        ]
+        for batch_id in (first.json()["id"], second.json()["id"]):
+            batch = session.get(ImportBatch, batch_id)
+            assert batch is not None
+            assert batch.pending_rows == 0
+            assert batch.discarded_rows == 1
+
+    assert client.delete("/api/importaciones/pendientes").json() == {"descartados": 0}
 
 
 def test_committed_pending_cannot_be_committed_again(client: TestClient):

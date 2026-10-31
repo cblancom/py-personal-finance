@@ -19,6 +19,8 @@ HEADER_ALIASES = {
     "importe": "valor",
     "categoria": "categoria",
     "tipo": "categoria",
+    "tipo de gasto": "categoria",
+    "tipo gasto": "categoria",
 }
 REQUIRED_HEADERS = ("fecha", "descripcion", "valor")
 EXPENSE_TYPE_ALIASES = {

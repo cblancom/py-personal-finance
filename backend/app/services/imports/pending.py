@@ -1,6 +1,6 @@
 from typing import cast
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -193,6 +193,34 @@ def discard_pending(db: Session, pending_id: int) -> None:
         db.flush()
         _refresh_batch_counts(db, row.batch_id)
         db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
+def discard_all_pending(db: Session) -> int:
+    batch_ids = list(
+        db.scalars(
+            select(ImportRow.batch_id)
+            .where(ImportRow.status == ImportRowStatus.PENDING.value)
+            .distinct()
+        ).all()
+    )
+    if not batch_ids:
+        return 0
+
+    try:
+        result = db.execute(
+            update(ImportRow)
+            .where(ImportRow.status == ImportRowStatus.PENDING.value)
+            .values(status=ImportRowStatus.DISCARDED.value)
+        )
+        discarded = result.rowcount or 0
+        db.flush()
+        for batch_id in batch_ids:
+            _refresh_batch_counts(db, batch_id)
+        db.commit()
+        return discarded
     except Exception:
         db.rollback()
         raise

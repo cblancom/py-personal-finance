@@ -1,6 +1,6 @@
 # Tareas 007 — Importación de ingresos y gastos desde Excel y CSV
 
-- Estado: aprobado.
+- Estado: validada (revisión 3).
 - Especificación: [`spec.md`](spec.md).
 - Plan: [`plan.md`](plan.md).
 
@@ -16,12 +16,12 @@ T-008 ──► T-009 ──► T-010 ──┐
                     └──► T-011 ──┴──► T-012
 T-001 a T-008 + T-013 ──► T-014
 T-009 a T-012 ──► T-015
-T-014 + T-015 ──► T-016
+T-014 + T-015 ──► T-016 ──► T-017 ──► T-018 ──► T-019 ──► T-020 ──► T-021
 ```
 
-T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara el límite de subida y valida las imágenes. T-004 y T-005 pueden ejecutarse en paralelo una vez listo T-003. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cierra la especificación.
+T-001 crea la base de persistencia. T-003 puede avanzar en paralelo con T-002 después de T-001. T-013 prepara el límite de subida y valida las imágenes. T-004 y T-005 pueden ejecutarse en paralelo una vez listo T-003. T-006 integra el pipeline. T-007 y T-008 completan la API de pendientes. T-009 a T-012 implementan el frontend. T-014 y T-015 consolidan las pruebas; T-016 cerró la versión inicial. La revisión 2 se ejecutó en T-017 a T-020: semántica de categoría, descarte masivo, UI y revalidación. La revisión 3 se ejecutó en T-021: eliminación de movimientos importados.
 
-Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
+Las decisiones D-001 a D-013 de `spec.md` y el plan están aprobados. Las revisiones 2 y 3 están validadas.
 
 ## Tareas
 
@@ -206,12 +206,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     docker compose build api
     ```
 
-- [ ] **T-014 — Completar pruebas de backend y OpenAPI**
+- [x] **T-014 — Completar pruebas de backend y OpenAPI**
   - Requisitos: FR-001 a FR-016, NFR-001 a NFR-010.
   - Dependencias: T-001 a T-008, T-013.
   - Descripción: añadir pruebas unitarias de parsers, normalización, validación y huellas; pruebas de API para carga, pendientes, actualización, contabilización, descarte y errores; pruebas de integración para persistencia, aislamiento del resumen, transacciones, duplicados y concurrencia; pruebas de rutas en OpenAPI. Verificar migraciones upgrade/downgrade en la base de test.
   - Hecho cuando: todos los casos de la matriz están cubiertos; las pruebas de integración pasan contra PostgreSQL; el resumen no incluye pendientes; OpenAPI incluye las rutas nuevas.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): añadidas pruebas de rutas OpenAPI, importación con solo pendientes sin impacto en resumen y duplicados dentro del mismo archivo con contadores de lote. Verificado ciclo Alembic `0005 → 0004 → 0005`. 228/228 backend en Docker; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -222,12 +222,12 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     docker compose exec api uv run alembic current
     ```
 
-- [ ] **T-015 — Completar pruebas de frontend**
+- [x] **T-015 — Completar pruebas de frontend**
   - Requisitos: FR-012, FR-017, NFR-005, NFR-008.
   - Dependencias: T-009 a T-012.
   - Descripción: cubrir cliente API, `ImportView`, `PendingView`, badge, navegación de App, estados de carga/error/vacío, accesibilidad y formato COP. Verificar que las pruebas existentes de ingresos y gastos siguen pasando.
   - Hecho cuando: las pruebas cubren el flujo importar → pendientes → corregir → contabilizar/descartar; lint, typecheck, test y build pasan.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): ampliadas las pruebas de `ImportView` con errores 413/422 y estado de importación, y de `PendingView` con confirmación de posible duplicado. 72/72 frontend; lint, typecheck y build pasan.
   - Verificación:
     ```bash
     cd frontend
@@ -237,17 +237,93 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
     npm run build
     ```
 
-- [ ] **T-016 — Documentar y validar la especificación**
+- [x] **T-016 — Documentar y validar la especificación**
   - Requisitos: AC-001 a AC-016, NFR-010.
   - Dependencias: T-014, T-015.
   - Descripción: actualizar README con el contrato de importación una vez implementado, actualizar AGENTS y `specs/README.md`, registrar la evidencia de aceptación, verificar los límites y el comportamiento de producción, y marcar la especificación como validada.
   - Hecho cuando: los AC están cubiertos con evidencia; la documentación coincide con la implementación; no hay regresiones; la especificación queda validada.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-29): README, AGENTS y `specs/README.md` actualizados con el contrato de importación y el estado validado. Producción reconstruida; migraciones `0004` y `0005` aplicadas; `api`, `db` y `web` healthy; smoke OK; `/api/importaciones/pendientes/count` responde cero; archivo vacío devuelve `422`; archivo de 13 MiB devuelve `413` en Nginx. Backend 228/228 y frontend 72/72; ruff, format, lint, typecheck y build pasan.
   - Verificación:
     ```bash
     docker compose --env-file .env.production -f compose.prod.yaml config -q
     WEB_PORT=3001 ./scripts/smoke.sh
     git diff --check
+    ```
+
+- [x] **T-017 — Alinear Categoría de gastos con Tipo de gasto**
+  - Requisitos: FR-004, FR-009, AC-018.
+  - Dependencias: T-006, T-008.
+  - Descripción: para gastos, tratar `Categoría` como alias de `Tipo de gasto`; añadir alias de cabecera, emitir errores con campo `tipo_gasto` y hacer que la actualización de gastos use solo `tipo_gasto`. Mantener `categoria` como dato original de auditoría y conservar la categoría opcional de ingresos.
+  - Hecho cuando: un gasto con `Categoría` válida se normaliza a `tipo_gasto`; un tipo desconocido queda pendiente con error `tipo_gasto`; la actualización de un gasto no requiere una categoría libre; las pruebas de ingresos siguen pasando.
+  - Evidencia (2026-10-31): `Tipo de gasto` y `Categoría` comparten la columna canónica; los errores de gasto usan `tipo_gasto`; el valor original se conserva en `filas_importacion.categoria`. 230/230 pruebas de backend; ruff y format pasan.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run pytest tests/core tests/integration
+    uv run ruff check .
+    uv run ruff format --check .
+    ```
+
+- [x] **T-018 — Implementar el descarte masivo global de pendientes**
+  - Requisitos: FR-011, NFR-002, AC-017.
+  - Dependencias: T-007, T-008.
+  - Descripción: añadir `DELETE /api/importaciones/pendientes` para descartar lógicamente todos los pendientes en una transacción, devolver el número de descartados y recalcular los contadores de todos los lotes afectados. Añadir el schema de respuesta.
+  - Hecho cuando: todos los pendientes pasan a `DESCARTADO`; el conteo global queda en cero; los contadores de los lotes son correctos; no se crean ni eliminan movimientos; `DELETE` es idempotente y devuelve `0` si no hay pendientes.
+  - Evidencia (2026-10-31): endpoint `DELETE /api/importaciones/pendientes` con respuesta `{"descartados": n}`; prueba de integración con dos lotes verifica estados, contadores, resumen y segunda llamada idempotente. OpenAPI actualizado.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run pytest tests/api tests/integration
+    uv run ruff check .
+    ```
+
+- [x] **T-019 — Ajustar la UI de pendientes y añadir Descartar todo**
+  - Requisitos: FR-009, FR-011, FR-017, AC-017, AC-018.
+  - Dependencias: T-017, T-018, T-009, T-010, T-011, T-012.
+  - Descripción: en gastos, mostrar solo `Tipo de gasto` y ocultar `Categoría`; en ingresos, mantener `Categoría`. Añadir el botón `Descartar todo` con confirmación, conteo de pendientes, estado deshabilitado y refresco de lista, badge y resumen. Añadir `discardAllPending` al cliente API.
+  - Hecho cuando: la UI de gastos no muestra dos campos de categoría; `Descartar todo` descarta globalmente tras confirmar; cancelar no envía la petición; la lista, el badge y el resumen se actualizan; pruebas de componentes pasan.
+  - Evidencia (2026-10-31): `PendingView` muestra `Categoría` solo para ingresos y `Tipo de gasto` solo para gastos; `Descartar todo` confirma, llama al endpoint, limpia la lista y refresca. 77/77 pruebas de frontend; lint, typecheck y build pasan.
+  - Verificación:
+    ```bash
+    cd frontend
+    npm run test
+    npm run lint
+    npm run typecheck
+    npm run build
+    ```
+
+- [x] **T-020 — Revalidar la especificación 007**
+  - Requisitos: AC-017, AC-018, NFR-010.
+  - Dependencias: T-017, T-018, T-019.
+  - Descripción: actualizar README/AGENTS/`specs/README.md` con la semántica corregida y el descarte masivo, completar la evidencia, ejecutar pruebas backend/frontend y validar la entrega de producción.
+  - Hecho cuando: AC-017 y AC-018 tienen evidencia; la documentación refleja el comportamiento real; backend y frontend pasan; producción se reconstruye y el smoke test pasa; la especificación queda validada de nuevo.
+  - Evidencia (2026-10-31): README, AGENTS y `specs/README.md` actualizados; backend 230/230 y frontend 77/77; producción reconstruida sin migraciones nuevas; smoke test OK y conteo de pendientes verificado.
+  - Verificación:
+    ```bash
+    docker compose --env-file .env.production -f compose.prod.yaml config -q
+    WEB_PORT=3001 ./scripts/smoke.sh
+    (cd frontend && npm run lint && npm run typecheck && npm run test && npm run build)
+    (cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest)
+    docker compose exec api uv run pytest
+    ```
+
+- [x] **T-021 — Corregir la eliminación de movimientos importados**
+  - Requisitos: AC-019, D-008.
+  - Dependencias: T-001, T-006, T-008, T-014.
+  - Descripción: añadir la migración `0006_allow_imported_without_movement` para relajar `ck_filas_importacion_referencia_movimiento`, actualizar la restricción en `ImportRow.__table_args__`, actualizar la versión esperada de Alembic en las pruebas y cubrir la eliminación de gastos e ingresos importados. La fila de importación debe conservar `estado = 'IMPORTADO'` y la referencia nula, sin reencolarse; el resumen debe reflejar la eliminación del movimiento.
+  - Hecho cuando: eliminar un gasto o ingreso importado devuelve `204`; el movimiento desaparece; la fila de importación queda `IMPORTADO` con referencia nula; los contadores del lote no cambian; las eliminaciones manuales siguen funcionando; la migración `0006` se aplica y su downgrade funciona en una base sin filas huérfanas.
+  - Evidencia (2026-10-31): migración `0006_allow_imported_without_movement` aplicada; restricción relajada; pruebas de eliminación de gastos e ingresos importados verifican `204`, fila `IMPORTADO`, referencia nula y contadores del lote. 232/232 pruebas de backend; ciclo Alembic `0006 → 0005 → 0006`; producción reconstruida y smoke OK.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run ruff check .
+    uv run ruff format --check .
+    uv run --env-file ../.env pytest
+    uv run --env-file ../.env alembic upgrade head
+    ```
+    ```bash
+    docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+    WEB_PORT=3001 ./scripts/smoke.sh
     ```
 
 ## Matriz de cobertura
@@ -259,62 +335,65 @@ Las decisiones D-001 a D-012 de `spec.md` y el plan están aprobados. La impleme
 | FR-001 | T-006, T-010, T-013, T-014 |
 | FR-002 | T-003, T-004, T-005, T-006 |
 | FR-003 | T-003, T-004, T-005, T-014 |
-| FR-004 | T-002, T-003, T-006 |
+| FR-004 | T-002, T-003, T-006, T-017 |
 | FR-005 | T-006, T-014 |
 | FR-006 | T-001, T-006, T-014 |
 | FR-007 | T-006, T-014 |
 | FR-008 | T-007, T-011, T-012 |
-| FR-009 | T-008, T-011 |
+| FR-009 | T-008, T-011, T-017, T-019 |
 | FR-010 | T-008, T-011 |
-| FR-011 | T-008, T-011 |
+| FR-011 | T-008, T-011, T-018, T-019 |
 | FR-012 | T-007, T-012, T-015 |
 | FR-013 | T-008, T-014 |
 | FR-014 | T-003, T-006, T-014 |
 | FR-015 | T-004, T-005, T-006, T-014 |
 | FR-016 | T-006, T-013, T-014 |
-| FR-017 | T-010, T-011, T-012, T-015 |
+| FR-017 | T-010, T-011, T-012, T-015, T-019 |
 
 ### Requisitos no funcionales
 
 | Requisito | Tareas |
 |---|---|
 | NFR-001 | T-001, T-003, T-014 |
-| NFR-002 | T-001, T-006, T-008, T-014 |
+| NFR-002 | T-001, T-006, T-008, T-014, T-018 |
 | NFR-003 | T-006, T-013, T-014 |
 | NFR-004 | T-006, T-013, T-014 |
 | NFR-005 | T-010, T-011, T-012, T-015 |
-| NFR-006 | T-001 a T-016 |
-| NFR-007 | T-006, T-008, T-014 |
+| NFR-006 | T-001 a T-021 |
+| NFR-007 | T-006, T-008, T-014, T-021 |
 | NFR-008 | T-002, T-009, T-014 |
 | NFR-009 | T-013 |
-| NFR-010 | T-014, T-015, T-016 |
+| NFR-010 | T-014, T-015, T-016, T-020, T-021 |
 
 ## Evidencia de validación
 
-Se completa durante T-016.
+Validada durante T-016, T-020 y T-021.
 
 | Criterio | Resultado | Evidencia |
 |---|---|---|
-| AC-001 | Pendiente | |
-| AC-002 | Pendiente | |
-| AC-003 | Pendiente | |
-| AC-004 | Pendiente | |
-| AC-005 | Pendiente | |
-| AC-006 | Pendiente | |
-| AC-007 | Pendiente | |
-| AC-008 | Pendiente | |
-| AC-009 | Pendiente | |
-| AC-010 | Pendiente | |
-| AC-011 | Pendiente | |
-| AC-012 | Pendiente | |
-| AC-013 | Pendiente | |
-| AC-014 | Pendiente | |
-| AC-015 | Pendiente | |
-| AC-016 | Pendiente | |
+| AC-001 | Cumple | Pruebas de importación CSV de ingresos. |
+| AC-002 | Cumple | Prueba de importación XLSX de gastos. |
+| AC-003 | Cumple | Pruebas de alias y normalización de cabeceras. |
+| AC-004 | Cumple | Pruebas de importación parcial con pendientes. |
+| AC-005 | Cumple | Persistencia de filas en PostgreSQL y pruebas de integración. |
+| AC-006 | Cumple | Pruebas de actualización y contabilización. |
+| AC-007 | Cumple | Pruebas de descarte sin movimientos. |
+| AC-008 | Cumple | Pruebas de conteo y badge en App. |
+| AC-009 | Cumple | Pruebas de duplicados dentro y entre archivos. |
+| AC-010 | Cumple | Pruebas de archivos vacíos, extensión y cabeceras. |
+| AC-011 | Cumple | Límites de filas, servicio `413` y Nginx `413`. |
+| AC-012 | Cumple | Prueba de segunda contabilización `409`. |
+| AC-013 | Cumple | Pruebas de resumen con pendientes. |
+| AC-014 | Cumple | Pruebas de componentes, accesibilidad y CSS responsive. |
+| AC-015 | Cumple | Backend 232/232 y frontend 77/77; calidad completa. |
+| AC-016 | Cumple | README, AGENTS y `specs/README.md` actualizados. |
+| AC-017 | Cumple | Prueba de descarte masivo global y prueba de componente con confirmación. |
+| AC-018 | Cumple | Pruebas de alias de cabecera, errores `tipo_gasto` y campos condicionales en la UI. |
+| AC-019 | Cumple | Pruebas de eliminación de gastos e ingresos importados; la fila conserva `IMPORTADO` y la referencia nula. |
 
 ## Notas
 
-- No se implementa nada en esta etapa; todos los checkboxes quedan pendientes.
+- La versión inicial se implementó y validó; T-017 a T-020 completan la revisión 2; T-021 completa la revisión 3.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 006.
 - `openpyxl` y `python-multipart` están incorporados; T-013 completó el límite de Nginx y la validación de imágenes.
@@ -326,4 +405,4 @@ Se completa durante T-016.
 - La decisión D-006 está aprobada: se permite guardar pendientes parcialmente inválidos.
 - La decisión D-007 está aprobada: el descarte es lógico y conserva la fila con estado `DESCARTADO`.
 - La decisión D-012 está aprobada: el historial de importaciones queda fuera de alcance; su visión futura está documentada en `spec.md`.
-- No se declara la especificación validada hasta ejecutar T-016.
+- La versión inicial quedó validada en T-016; la revisión 2 quedó validada en T-020; la revisión 3 quedó validada en T-021.

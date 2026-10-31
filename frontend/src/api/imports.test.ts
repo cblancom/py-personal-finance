@@ -7,6 +7,7 @@ import type {
 import {
   commitPending,
   countPending,
+  discardAllPending,
   discardPending,
   listPending,
   updatePending,
@@ -37,7 +38,7 @@ const pending: ImportPendingRow = {
   categoria: null,
   tipo_gasto: null,
   estado: 'PENDIENTE',
-  errores: [{ campo: 'categoria', mensaje: 'La categoría es obligatoria.' }],
+  errores: [{ campo: 'tipo_gasto', mensaje: 'El tipo de gasto es obligatorio.' }],
   posible_duplicado: false,
   duplicado_de_id: null,
 }
@@ -174,5 +175,21 @@ describe('imports API', () => {
       headers: { Accept: 'application/json' },
     })
     expect(json).not.toHaveBeenCalled()
+  })
+
+  it('discards all pending rows', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ descartados: 3 }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(discardAllPending()).resolves.toEqual({ descartados: 3 })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/importaciones/pendientes', {
+      method: 'DELETE',
+      headers: { Accept: 'application/json' },
+    })
   })
 })

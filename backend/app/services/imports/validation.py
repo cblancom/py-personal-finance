@@ -115,8 +115,8 @@ def validate_import_row(
         elif not category_text:
             row.errors.append(
                 ValidationIssue(
-                    field="categoria",
-                    message="La categoría es obligatoria para gastos.",
+                    field="tipo_gasto",
+                    message="El tipo de gasto es obligatorio.",
                 )
             )
         else:
@@ -124,8 +124,8 @@ def validate_import_row(
             if expense_type is None:
                 row.errors.append(
                     ValidationIssue(
-                        field="categoria",
-                        message="La categoría del gasto no es válida.",
+                        field="tipo_gasto",
+                        message="El tipo de gasto no es válido.",
                     )
                 )
             else:
