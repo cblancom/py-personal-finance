@@ -102,8 +102,8 @@ def reset_movements(test_engine: Engine) -> Iterator[None]:
     with test_engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE TABLE filas_importacion, lotes_importacion, "
-                "ingresos, gastos RESTART IDENTITY CASCADE"
+                "TRUNCATE TABLE asignaciones_mensuales, filas_importacion, "
+                "lotes_importacion, ingresos, gastos RESTART IDENTITY CASCADE"
             )
         )
     yield

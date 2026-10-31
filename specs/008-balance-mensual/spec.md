@@ -1,11 +1,11 @@
 # Especificación 008 — Balance mensual
 
-- Estado: aprobada (revisión 2).
+- Estado: en implementación (revisión 2).
 - Fase: 6.
 - Iteración: post-MVP.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/`, `specs/004-api-resumen/`, `specs/005-interfaz-mvp/`.
 - Plan: `plan.md` (aprobado; revisión 2).
-- Tareas: `tasks.md` (aprobadas; revisión 2).
+- Tareas: `tasks.md` (T-001 a T-003 completadas; T-004 a T-010 pendientes).
 
 ## 1. Contexto y problema
 

@@ -1,6 +1,6 @@
 # Tareas 008 — Balance mensual
 
-- Estado: aprobadas (revisión 2).
+- Estado: en implementación (revisión 2).
 - Especificación: [`spec.md`](spec.md).
 - Plan: [`plan.md`](plan.md).
 
@@ -15,16 +15,16 @@ T-001 a T-008 ──► T-009 ──► T-010
 
 T-001 crea la persistencia. T-002 y T-003 pueden avanzar en paralelo después de T-001. T-004 y T-005 completan la API. T-006 a T-008 implementan el frontend. T-009 consolida las pruebas y T-010 valida y documenta.
 
-Las decisiones D-001 a D-005 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
+Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
 
 ## Tareas
 
-- [ ] **T-001 — Crear el modelo y la migración de asignaciones mensuales**
+- [x] **T-001 — Crear el modelo y la migración de asignaciones mensuales**
   - Requisitos: FR-011, NFR-001, NFR-003, NFR-007.
   - Dependencias: ninguna.
   - Descripción: crear `MonthlyAllocation` en `app/db/models/monthly_allocation.py` con tabla `asignaciones_mensuales`, una fila por año/mes, porcentajes `NUMERIC(5,2)`, checks de rango y suma, unique `(anio, mes)`, timestamps y exportación en `models/__init__.py`. Crear la migración `0007_create_monthly_allocations` con upgrade y downgrade.
   - Hecho cuando: la tabla existe con constraints e índice único; `alembic upgrade head` y `downgrade` funcionan; la versión esperada de la base de test es `0007`; no se modifican tablas existentes.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): modelo `MonthlyAllocation` y tabla `asignaciones_mensuales` con unique `(anio, mes)`, checks de rango y suma; migración `0007` aplicada en desarrollo y test; ciclo `0007 → 0006 → 0007` verificado; 232/232 pruebas de backend; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -34,12 +34,12 @@ Las decisiones D-001 a D-005 de `spec.md` y el plan están aprobados. La impleme
     uv run --env-file ../.env alembic current
     ```
 
-- [ ] **T-002 — Implementar los cálculos y consultas del balance**
+- [x] **T-002 — Implementar los cálculos y consultas del balance**
   - Requisitos: FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-015, NFR-001, NFR-002.
   - Dependencias: T-001.
   - Descripción: crear `app/services/monthly_balance.py` con funciones para obtener periodos disponibles, sumar ingresos y gastos por rango de fechas, leer asignaciones, cargar movimientos mensuales agrupados por columna, calcular asignado/restante/sin asignar y construir el balance mensual y anual. Usar `Decimal`, `SUM` y `GROUP BY` para los totales; los movimientos se consultan solo para la vista mensual.
   - Hecho cuando: los cálculos mensuales y anuales son correctos; el restante puede ser negativo; el porcentaje anual es ponderado; sin ingresos los asignados son cero; el monto sin asignar se normaliza a cero si el redondeo lo deja negativo.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `monthly_balance.py` implementa cálculos puros de asignado, restante, sin asignar y porcentaje ponderado, además de consultas mensuales/anuales y periodos con `Decimal`, `SUM` y `GROUP BY`. 5 pruebas unitarias nuevas; 246/246 pruebas de backend; ruff y format pasan.
   - Verificación:
     ```bash
     cd backend
@@ -48,12 +48,12 @@ Las decisiones D-001 a D-005 de `spec.md` y el plan están aprobados. La impleme
     uv run ruff format --check .
     ```
 
-- [ ] **T-003 — Crear los schemas de balance y asignaciones**
+- [x] **T-003 — Crear los schemas de balance y asignaciones**
   - Requisitos: FR-012, FR-014, FR-015, FR-016, NFR-001, NFR-003.
   - Dependencias: T-001.
   - Descripción: crear `app/api/schemas/monthly_balance.py` con DTOs para rubros, movimientos mensuales, balance mensual/anual, periodos y actualización de porcentajes. Validar cada porcentaje entre 0 y 100, máximo dos decimales y suma menor o igual a 100. Serializar importes y porcentajes como strings.
   - Hecho cuando: los schemas aceptan el contrato aprobado, rechazan porcentajes inválidos y el JSON conserva los nombres en español.
-  - Evidencia (pendiente):
+  - Evidencia (2026-10-31): `monthly_balance.py` define rubros, movimientos, balance mensual/anual, periodos y actualización de porcentajes; valida rango, dos decimales, presencia de los tres rubros y suma <=100. 9 pruebas de schema; serialización en español verificada.
   - Verificación:
     ```bash
     cd backend
@@ -226,7 +226,7 @@ Se completa durante T-010.
 
 ## Notas
 
-- No se implementa nada en esta etapa; todos los checkboxes quedan pendientes.
+- T-001 a T-003 están completadas; T-004 a T-010 quedan pendientes.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 007.
 - No se añaden dependencias nuevas.
