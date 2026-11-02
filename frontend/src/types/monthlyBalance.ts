@@ -3,6 +3,8 @@ import type { ExpenseType } from './expense'
 export interface BalanceRubro {
   porcentaje: string
   asignado: string
+  arrastre: string
+  disponible: string
   gastado: string
   restante: string
 }

@@ -135,6 +135,12 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
                 Asignado
               </th>
               <th scope="col" className="amount">
+                Arrastre
+              </th>
+              <th scope="col" className="amount">
+                Disponible
+              </th>
+              <th scope="col" className="amount">
                 Gastado
               </th>
               <th scope="col" className="amount">
@@ -151,6 +157,8 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
                   <th scope="row">{expenseTypeLabel(type)}</th>
                   <td>{rubro.porcentaje}%</td>
                   <td className="amount">{formatMoney(rubro.asignado)}</td>
+                  <td className="amount">{formatMoney(rubro.arrastre)}</td>
+                  <td className="amount">{formatMoney(rubro.disponible)}</td>
                   <td className="amount">{formatMoney(rubro.gastado)}</td>
                   <td className={negative ? 'amount balance-negative' : 'amount'}>
                     {formatMoney(rubro.restante)}
@@ -161,6 +169,9 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
           </tbody>
         </table>
       </div>
+      <p className="balance-annual__note">
+        En necesarios, el restante se transfiere a no necesarios.
+      </p>
     </section>
   )
 }
@@ -452,7 +463,15 @@ export function MonthlyBalanceView() {
                   value: formatMoney(balance.rubros.NECESARIO.asignado),
                 },
                 {
-                  label: 'Restante',
+                  label: 'Arrastre',
+                  value: formatMoney(balance.rubros.NECESARIO.arrastre),
+                },
+                {
+                  label: 'Disponible',
+                  value: formatMoney(balance.rubros.NECESARIO.disponible),
+                },
+                {
+                  label: 'Restante transferido',
                   value: formatMoney(balance.rubros.NECESARIO.restante),
                   negative: balance.rubros.NECESARIO.restante.startsWith('-'),
                 },
@@ -471,6 +490,14 @@ export function MonthlyBalanceView() {
                 {
                   label: 'Asignado',
                   value: formatMoney(balance.rubros.NO_NECESARIO.asignado),
+                },
+                {
+                  label: 'Arrastre',
+                  value: formatMoney(balance.rubros.NO_NECESARIO.arrastre),
+                },
+                {
+                  label: 'Disponible',
+                  value: formatMoney(balance.rubros.NO_NECESARIO.disponible),
                 },
                 {
                   label: 'Restante',
@@ -492,6 +519,14 @@ export function MonthlyBalanceView() {
                 {
                   label: 'Asignado',
                   value: formatMoney(balance.rubros.INVERSION.asignado),
+                },
+                {
+                  label: 'Arrastre',
+                  value: formatMoney(balance.rubros.INVERSION.arrastre),
+                },
+                {
+                  label: 'Disponible',
+                  value: formatMoney(balance.rubros.INVERSION.disponible),
                 },
                 {
                   label: 'Restante',

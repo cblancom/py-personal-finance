@@ -1,6 +1,6 @@
 # Tareas 008 — Balance mensual
 
-- Estado: validada (revisión 2).
+- Estado: validada (revisión 3).
 - Especificación: [`spec.md`](spec.md).
 - Plan: [`plan.md`](plan.md).
 
@@ -10,12 +10,12 @@
 T-001 ──► T-002 ──► T-004
   └─────► T-003 ──► T-005
 T-004 + T-005 ──► T-006 ──► T-007 ──► T-008
-T-001 a T-008 ──► T-009 ──► T-010
+T-001 a T-008 ──► T-009 ──► T-010 ──► T-011 ──► T-012 ──► T-013 ──► T-014 ──► T-015
 ```
 
 T-001 crea la persistencia. T-002 y T-003 pueden avanzar en paralelo después de T-001. T-004 y T-005 completan la API. T-006 a T-008 implementan el frontend. T-009 consolida las pruebas y T-010 valida y documenta.
 
-Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La implementación avanza por tareas.
+Las decisiones D-001 a D-007 de `spec.md` y el plan están aprobados. La revisión 3 se implementa en T-011 a T-015.
 
 ## Tareas
 
@@ -165,6 +165,87 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
     WEB_PORT=3001 ./scripts/smoke.sh
     ```
 
+- [x] **T-011 — Implementar la cadena de arrastre**
+  - Requisitos: FR-019, FR-020, FR-021, NFR-001, NFR-002.
+  - Dependencias: T-010.
+  - Descripción: calcular el arrastre desde el primer mes con datos, aplicando necesarios a no necesarios, no necesarios a no necesarios e inversión a inversión; arrastrar positivos y negativos; pasar de diciembre a enero del año siguiente; recalcular de forma dinámica.
+  - Hecho cuando: los cálculos mensuales y anuales incluyen `arrastre` y `disponible`; el arrastre no se reinicia en enero; los cambios históricos recalculan los meses posteriores.
+  - Evidencia (2026-10-31): el servicio calcula la cadena desde el primer mes con datos, arrastra necesarios a no necesarios, mantiene no necesarios e inversión independientes, cruza diciembre a enero y recalcula dinámicamente. 272/272 pruebas backend; ruff y format pasan.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run pytest tests/core tests/integration
+    uv run ruff check .
+    uv run ruff format --check .
+    ```
+
+- [x] **T-012 — Actualizar el contrato de API**
+  - Requisitos: FR-022, FR-014, FR-015, FR-016.
+  - Dependencias: T-011.
+  - Descripción: añadir `arrastre` y `disponible` a los schemas de rubros, mapear los nuevos campos en la ruta y actualizar las pruebas de schema y API.
+  - Hecho cuando: la respuesta mensual y anual incluye los nuevos campos; OpenAPI y pruebas pasan.
+  - Evidencia (2026-10-31): `BalanceRubroRead` incluye `arrastre` y `disponible`; la ruta mensual/anual los mapea; pruebas de schema e integración actualizadas. 272/272 backend; ruff y format OK.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run pytest tests/api tests/integration
+    uv run ruff check .
+    ```
+
+- [x] **T-013 — Mostrar el arrastre en la vista mensual**
+  - Requisitos: FR-003, FR-019, FR-022.
+  - Dependencias: T-012.
+  - Descripción: actualizar tipos y columnas para mostrar asignado, arrastre, disponible y restante; indicar que el restante de necesarios se transfiere a no necesarios.
+  - Hecho cuando: la UI muestra el arrastre y el disponible; los tests de componentes pasan.
+  - Evidencia (2026-10-31): la vista mensual muestra `Asignado`, `Arrastre`, `Disponible` y `Restante`; en necesarios el restante se etiqueta como transferido. 99/99 frontend; lint, typecheck y build OK.
+  - Verificación:
+    ```bash
+    cd frontend
+    npm run test
+    npm run lint
+    npm run typecheck
+    ```
+
+- [x] **T-014 — Actualizar la tabla anual con arrastre**
+  - Requisitos: FR-009, FR-023.
+  - Dependencias: T-012.
+  - Descripción: mostrar `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante` en la tabla anual, con la semántica de necesarios/no necesarios/inversión y sin doble conteo.
+  - Hecho cuando: la tabla anual muestra los cinco campos y las pruebas de API/componente pasan.
+  - Evidencia (2026-10-31): la tabla anual muestra `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante`, con nota para el restante transferido de necesarios; 99/99 frontend; lint, typecheck y build OK.
+  - Verificación:
+    ```bash
+    cd frontend
+    npm run test
+    npm run lint
+    npm run typecheck
+    ```
+
+- [x] **T-015 — Revalidar la revisión 3 y publicar 1.1.0**
+  - Requisitos: AC-015 a AC-020, NFR-004, NFR-007.
+  - Dependencias: T-011 a T-014.
+  - Descripción: completar pruebas, actualizar README/AGENTS/specs, sincronizar metadatos a 1.1.0 y validar producción.
+  - Hecho cuando: las suites pasan; la documentación refleja el arrastre; la versión 1.1.0 está sincronizada; producción está healthy y el smoke test pasa.
+  - Evidencia (2026-10-31): 272/272 backend y 99/99 frontend; versión 1.1.0 sincronizada; producción healthy en `0007`, smoke OK y respuesta de balance con `arrastre` y `disponible` verificada. La especificación queda validada.
+  - Verificación:
+    ```bash
+    cd backend
+    uv run --env-file ../.env pytest
+    uv run ruff check .
+    uv run ruff format --check .
+    ```
+    ```bash
+    cd frontend
+    npm run lint
+    npm run typecheck
+    npm run test
+    npm run build
+    ```
+    ```bash
+    docker compose --env-file .env.production -f compose.prod.yaml config -q
+    docker compose --env-file .env.production -f compose.prod.yaml up --build -d
+    WEB_PORT=3001 ./scripts/smoke.sh
+    ```
+
 ## Matriz de cobertura
 
 ### Requisitos funcionales
@@ -173,13 +254,13 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
 |---|---|
 | FR-001 | T-008 |
 | FR-002 | T-007, T-008 |
-| FR-003 | T-007 |
+| FR-003 | T-007, T-013 |
 | FR-004 | T-005, T-008 |
-| FR-005 | T-002, T-007 |
-| FR-006 | T-002, T-007 |
+| FR-005 | T-002, T-007, T-011 |
+| FR-006 | T-002, T-007, T-011 |
 | FR-007 | T-002, T-009 |
 | FR-008 | T-002, T-007 |
-| FR-009 | T-002, T-004, T-007 |
+| FR-009 | T-002, T-004, T-007, T-014 |
 | FR-010 | T-004, T-007 |
 | FR-011 | T-001, T-005 |
 | FR-012 | T-003, T-005 |
@@ -189,6 +270,11 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
 | FR-016 | T-003, T-004 |
 | FR-017 | T-007, T-008 |
 | FR-018 | T-009, T-010 |
+| FR-019 | T-011, T-013 |
+| FR-020 | T-011, T-015 |
+| FR-021 | T-011, T-015 |
+| FR-022 | T-012, T-013 |
+| FR-023 | T-014 |
 
 ### Requisitos no funcionales
 
@@ -197,22 +283,22 @@ Las decisiones D-001 a D-006 de `spec.md` y el plan están aprobados. La impleme
 | NFR-001 | T-001, T-002, T-003 |
 | NFR-002 | T-002, T-004 |
 | NFR-003 | T-001, T-003, T-004, T-005 |
-| NFR-004 | T-009, T-010 |
+| NFR-004 | T-009, T-010, T-015 |
 | NFR-005 | T-007, T-008 |
 | NFR-006 | T-010 |
-| NFR-007 | T-009, T-010 |
+| NFR-007 | T-009, T-010, T-015 |
 | NFR-008 | T-010 |
 
 ## Evidencia de validación
 
-Se completa durante T-010.
+Se completa durante T-015.
 
 | Criterio | Resultado | Evidencia |
 |---|---|---|
 | AC-001 | Cumple | Pestaña `Balance mensual` y prueba de `App`. |
 | AC-002 | Cumple | Selectores de año/mes y año actual por defecto en pruebas de componente. |
-| AC-003 | Cumple | Cuatro columnas con fecha, descripción, valor, total y restante. |
-| AC-004 | Cumple | Vista anual con `Todos` y agregación anual. |
+| AC-003 | Cumple | Cuatro columnas con asignado, arrastre, disponible, gastado y restante. |
+| AC-004 | Cumple | Vista anual con arrastre y disponible. |
 | AC-005 | Cumple | Upsert independiente por mes en pruebas de integración. |
 | AC-006 | Cumple | Monto sin asignar y validación de suma. |
 | AC-007 | Cumple | Suma mayor que 100 devuelve `422`. |
@@ -223,10 +309,16 @@ Se completa durante T-010.
 | AC-012 | Cumple | Rutas y schemas en OpenAPI. |
 | AC-013 | Cumple | Carga, error, vacío, validación y guardado en componentes. |
 | AC-014 | Cumple | Suites completas y smoke de producción. |
+| AC-015 | Cumple | Arrastre positivo de necesarios a no necesarios. |
+| AC-016 | Cumple | Arrastre negativo reduce el disponible siguiente. |
+| AC-017 | Cumple | No necesarios e inversión se arrastran de forma independiente. |
+| AC-018 | Cumple | Diciembre pasa a enero sin reinicio. |
+| AC-019 | Cumple | Recálculo dinámico al cambiar una asignación anterior. |
+| AC-020 | Cumple | Tabla anual con Asignado, Arrastre, Disponible, Gastado y Restante. |
 
 ## Notas
 
-- T-001 a T-010 están completadas; la especificación queda validada.
+- T-001 a T-015 están completadas; la especificación queda validada.
 - No se modifica `legacy/`.
 - No se modifican las especificaciones 001 a 007.
 - No se añaden dependencias nuevas.
@@ -234,3 +326,5 @@ Se completa durante T-010.
 - Los montos asignados no se almacenan; se recalculan al consultar.
 - La vista mensual usa cuatro columnas con fecha, descripción y valor; la vista anual es una tabla agregada.
 - La vista anual usa el año actual por defecto y el mes `Todos`.
+- El arrastre no se almacena: se calcula desde el primer mes con datos.
+- La revisión 3 se publicará como versión 1.1.0.

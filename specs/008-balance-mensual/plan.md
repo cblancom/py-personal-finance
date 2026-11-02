@@ -1,9 +1,9 @@
 # Plan técnico 008 — Balance mensual
 
-- Estado: aprobado (revisión 2 implementada y validada).
+- Estado: aprobado (revisión 3 implementada y validada).
 - Especificación: [`spec.md`](spec.md).
 - Fase: 6.
-- Iteración: post-MVP.
+- Iteración: 1.1.
 
 ## 1. Resumen de la solución
 
@@ -15,7 +15,7 @@ La solución incluye:
 - Una migración Alembic `0007`.
 - Endpoints de consulta mensual/anual y de guardado de porcentajes.
 - Cálculos monetarios con `Decimal`.
-- Una vista React con selectores, cuatro columnas de movimientos, edición de porcentajes y monto sin asignar.
+- Una vista React con selectores, cuatro columnas de movimientos, edición de porcentajes, monto sin asignar y arrastre entre meses.
 - Pruebas de cálculos, API, integración, OpenAPI y componentes.
 
 No se añaden dependencias.
@@ -42,6 +42,7 @@ MonthlyBalanceRead
   ├── ingresos
   ├── sin_asignar
   ├── rubros[NECESARIO, NO_NECESARIO, INVERSION]
+  │     └── porcentaje, asignado, arrastre, disponible, gastado, restante
   └── movimientos[INGRESOS, NECESARIO, NO_NECESARIO, INVERSION]
 ```
 
@@ -51,18 +52,20 @@ Flujo mensual:
 2. El backend suma ingresos del mes.
 3. Agrupa gastos del mes por tipo.
 4. Lee la asignación del mes; si no existe, usa 0% en los tres rubros.
-5. Calcula asignado y restante por rubro.
-6. Calcula el monto sin asignar.
-7. Carga los movimientos del mes agrupados por columna.
-8. Devuelve el contrato mensual.
+5. Calcula la cadena de arrastre desde el primer mes con datos.
+6. Calcula asignado, arrastre, disponible y restante por rubro.
+7. Calcula el monto sin asignar.
+8. Carga los movimientos del mes agrupados por columna.
+9. Devuelve el contrato mensual.
 
 Flujo anual:
 
 1. El frontend selecciona un año y el mes `Todos`.
 2. El backend agrega los doce meses.
-3. Suma los montos asignados de cada mes.
-4. Calcula el porcentaje ponderado por los ingresos anuales.
-5. Devuelve el contrato anual con `mes: null`.
+3. Ejecuta la cadena de arrastre de los doce meses.
+4. Calcula asignado base, arrastre, disponible, gastado y restante anuales.
+5. Calcula el porcentaje ponderado por los ingresos anuales.
+6. Devuelve el contrato anual con `mes: null`.
 
 ## 3. Componentes y responsabilidades
 
@@ -142,18 +145,24 @@ Respuesta mensual `200`:
     "NECESARIO": {
       "porcentaje": "50.00",
       "asignado": "2500.00",
+      "arrastre": "0.00",
+      "disponible": "2500.00",
       "gastado": "1000.00",
       "restante": "1500.00"
     },
     "NO_NECESARIO": {
       "porcentaje": "30.00",
       "asignado": "1500.00",
+      "arrastre": "1500.00",
+      "disponible": "3000.00",
       "gastado": "300.00",
-      "restante": "1200.00"
+      "restante": "2700.00"
     },
     "INVERSION": {
       "porcentaje": "20.00",
       "asignado": "1000.00",
+      "arrastre": "0.00",
+      "disponible": "1000.00",
       "gastado": "200.00",
       "restante": "800.00"
     }
@@ -199,7 +208,7 @@ Respuesta anual `200`: misma estructura de `rubros` con `mes: null` y `porcentaj
 
 Reglas:
 
-- `rubros` contiene siempre los tres tipos.
+- `rubros` contiene siempre los tres tipos y los campos `asignado`, `arrastre`, `disponible`, `gastado` y `restante`.
 - `movimientos` contiene las cuatro listas del mes, ordenadas por fecha e id.
 - Cada item incluye `id`, `fecha`, `descripcion` y `valor`.
 - Los importes y porcentajes son strings con dos decimales.
@@ -261,7 +270,8 @@ Con ingresos del periodo y porcentajes del mes:
 
 ```text
 asignado_rubro = (ingresos * porcentaje_rubro / 100).quantize(Decimal("0.01"))
-restante_rubro = asignado_rubro - gastado_rubro
+disponible_rubro = asignado_rubro + arrastre_rubro
+restante_rubro = disponible_rubro - gastado_rubro
 sin_asignar = ingresos - suma(asignados)
 ```
 
@@ -269,13 +279,31 @@ sin_asignar = ingresos - suma(asignados)
 
 ### 6.3 Vista anual
 
-Para cada rubro:
+La cadena de arrastre se calcula mes a mes y luego se agrega el año:
 
 ```text
-asignado_anual = suma(asignados_mensuales)
+asignado_anual = suma(asignados_base_mensuales)
+arrastre_anual = saldo inicial de enero
+                 + transferencias de necesarios del año   # solo no necesarios
 gastado_anual = suma(gastos_del_tipo_en_el_año)
-restante_anual = asignado_anual - gastado_anual
+disponible_anual = asignado_anual + arrastre_anual
+restante_anual = disponible_anual - gastado_anual
 porcentaje_ponderado = asignado_anual / ingresos_anuales * 100
+```
+
+Para necesarios:
+
+```text
+arrastre_anual = 0.00
+restante_anual = asignado_anual - gastado_anual
+```
+
+Ese restante de necesarios se muestra como transferido a no necesarios.
+
+Para inversión:
+
+```text
+arrastre_anual = saldo inicial de enero
 ```
 
 Si `ingresos_anuales` es cero, el porcentaje ponderado es `0.00`.
@@ -287,6 +315,30 @@ sin_asignar_anual = ingresos_anuales - suma(asignados_anuales)
 ```
 
 También se normaliza a `0.00` si el redondeo produce un negativo.
+
+### 6.5 Arrastre entre meses y años
+
+El arrastre se calcula como una cadena desde el primer mes con ingresos, gastos o asignaciones:
+
+```text
+arrastre_necesario    = 0
+arrastre_no_necesario = restante_necesario_mes_anterior
+                      + restante_no_necesario_mes_anterior
+arrastre_inversion    = restante_inversion_mes_anterior
+
+disponible = asignado + arrastre
+restante   = disponible - gastado
+```
+
+Reglas:
+
+- El restante de necesarios pasa a no necesarios del mes siguiente.
+- El restante de no necesarios pasa a no necesarios del mes siguiente.
+- El restante de inversión pasa a inversión del mes siguiente.
+- Los negativos también se arrastran.
+- Diciembre del año `n` pasa a enero del año `n+1`.
+- El arrastre se calcula dinámicamente; no se almacena.
+- Si cambia un mes anterior, se recalculan todos los posteriores.
 
 ### 6.4 Normalización
 
@@ -323,7 +375,7 @@ Responsabilidades:
 - Mostrar selectores de año y mes.
 - Mostrar la vista mensual en cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión.
 - Mostrar los movimientos de cada columna con fecha, descripción y valor.
-- Mostrar el total de cada columna y los restantes de los tres rubros.
+- Mostrar el total de cada columna, el arrastre, el disponible y los restantes de los tres rubros.
 - Mostrar el total de ingresos y el monto sin asignar.
 - En vista mensual, permitir editar los tres porcentajes.
 - Guardar porcentajes con un botón explícito.
@@ -338,16 +390,16 @@ Vista mensual: cuatro columnas alineadas.
 |---|---|---|---|
 | Fecha · Descripción · Valor | Fecha · Descripción · Valor | Fecha · Descripción · Valor | Fecha · Descripción · Valor |
 | Total ingresos | Total gastos necesarios | Total gastos no necesarios | Total inversión |
-| Sin asignar | Presupuesto y restante | Presupuesto y restante | Presupuesto y restante |
+| Sin asignar | Asignado · Arrastre · Disponible · Restante | Asignado · Arrastre · Disponible · Restante | Asignado · Arrastre · Disponible · Restante |
 
-La columna de ingresos no tiene porcentaje ni restante propio; muestra su total y el monto sin asignar. Las tres columnas restantes muestran el porcentaje asignado, el monto asignado, el total real y el restante.
+La columna de ingresos no tiene porcentaje ni restante propio; muestra su total y el monto sin asignar. Las tres columnas restantes muestran el porcentaje, el asignado base, el arrastre, el disponible, el total real y el restante. En necesarios, el restante se marca como transferido a no necesarios.
 
 Vista anual: tabla agregada.
 
-| Rubro | Porcentaje ponderado | Asignado | Gastado | Restante |
-|---|---|---|---|---|
+| Rubro | Porcentaje ponderado | Asignado | Arrastre | Disponible | Gastado | Restante |
+|---|---|---|---|---|---|---|
 
-La fila de inversión se etiqueta `Inversión` y usa el tipo `INVERSION`. En pantallas estrechas, las cuatro columnas se apilan verticalmente sin perder los subtotales.
+En la fila de necesarios, `Arrastre` es `0.00` y `Restante` representa el monto transferido a no necesarios. En no necesarios, `Arrastre` incluye el saldo inicial y las transferencias de necesarios del año. En inversión, `Arrastre` es el saldo inicial. La fila de inversión se etiqueta `Inversión` y usa el tipo `INVERSION`. En pantallas estrechas, las cuatro columnas se apilan verticalmente sin perder los subtotales.
 
 ### 8.4 Cliente API
 
@@ -378,6 +430,10 @@ Añadir solo las clases necesarias para el selector de periodo y la tabla de bal
 - Porcentaje ponderado anual.
 - Periodo sin ingresos.
 - Restante negativo.
+- Arrastre positivo y negativo de necesarios a no necesarios.
+- Arrastre independiente de no necesarios e inversión.
+- Diciembre a enero del año siguiente.
+- Recálculo dinámico al cambiar un mes anterior.
 - Agrupación y orden de movimientos por fecha e id.
 - Serialización de schemas.
 
@@ -402,6 +458,8 @@ Añadir solo las clases necesarias para el selector de periodo y la tabla de bal
 - Porcentaje anual ponderado.
 - Año actual y años disponibles.
 - Migración `0007` y downgrade.
+- Arrastre entre meses y años.
+- Tabla anual con arrastre sin doble conteo.
 
 ### Frontend
 
@@ -449,17 +507,36 @@ Añadir solo las clases necesarias para el selector de periodo y la tabla de bal
 | FR-016 | 5.1, 6.3 | T-003, T-004 |
 | FR-017 | 8.2 | T-007, T-008 |
 | FR-018 | 7, 9 | T-009, T-010 |
+| FR-019 | 6.5, 8.3 | T-011, T-013 |
+| FR-020 | 6.5 | T-011, T-015 |
+| FR-021 | 6.5, 7 | T-011, T-015 |
+| FR-022 | 5.1, 6.2 | T-012, T-013 |
+| FR-023 | 6.3, 8.3 | T-014 |
 | NFR-001 | 6.4 | T-002, T-003 |
 | NFR-002 | 6.1 | T-002, T-004 |
 | NFR-003 | 3, 5 | T-003, T-004, T-005 |
-| NFR-004 | 9 | T-009, T-010 |
+| NFR-004 | 9 | T-009, T-010, T-015 |
 | NFR-005 | 8.2, 8.3 | T-007, T-008 |
 | NFR-006 | 1, 3 | T-010 |
-| NFR-007 | 7, 9 | T-009, T-010 |
+| NFR-007 | 7, 9 | T-009, T-010, T-015 |
 | NFR-008 | 1, 7 | T-010 |
 
 ## 12. Aprobación y siguiente paso
 
-Las decisiones D-001 a D-006 y el plan están aprobados. La implementación avanza por las tareas de `tasks.md`.
+Las decisiones D-001 a D-007 y el plan están aprobados. La revisión 3 se implementa en T-011 a T-015.
 
 No se modifica `legacy/`, no se altera el resumen global y no se añaden dependencias.
+
+## 13. Revisión 3 — Arrastre entre meses y años
+
+La revisión 3 añade:
+
+- Arrastre continuo del restante de necesarios a no necesarios del mes siguiente.
+- Arrastre independiente de no necesarios e inversión.
+- Arrastre de positivos y negativos.
+- Paso de diciembre a enero del año siguiente sin reinicio.
+- Cálculo dinámico desde el primer mes con datos.
+- Tabla anual con `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante`.
+- Sin migración: el arrastre es derivado y no se almacena.
+
+Las tareas T-011 a T-015 implementan y validan esta revisión.

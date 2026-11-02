@@ -1,11 +1,11 @@
 # Especificación 008 — Balance mensual
 
-- Estado: validada (revisión 2).
+- Estado: validada (revisión 3).
 - Fase: 6.
-- Iteración: post-MVP.
+- Iteración: 1.1.
 - Dependencias: `specs/002-api-ingresos/`, `specs/003-api-gastos/`, `specs/004-api-resumen/`, `specs/005-interfaz-mvp/`.
-- Plan: `plan.md` (aprobado; revisión 2 implementada y validada).
-- Tareas: `tasks.md` (T-001 a T-010 completadas).
+- Plan: `plan.md` (aprobado; revisión 3 implementada y validada).
+- Tareas: `tasks.md` (T-001 a T-015 completadas).
 
 ## 1. Contexto y problema
 
@@ -13,7 +13,7 @@ La aplicación permite registrar ingresos y gastos, clasificar los gastos y cons
 
 El resumen global no responde a esta necesidad porque mezcla todos los meses y no permite comparar la planeación con el gasto real de un periodo. Además, el usuario quiere asignar porcentajes distintos de sus ingresos a cada rubro en cada mes.
 
-Esta especificación añade una vista de balance mensual y anual, con asignaciones porcentuales persistidas por mes.
+Esta especificación añade una vista de balance mensual y anual, con asignaciones porcentuales persistidas por mes. La revisión 3 incorpora el arrastre de saldos entre meses y entre años.
 
 ## 2. Usuarios y actores
 
@@ -48,7 +48,7 @@ Como usuario, quiero ver el balance general de un año cuando no selecciono un m
 1. El usuario abre la pestaña `Balance mensual`.
 2. El selector de mes queda en `Todos`.
 3. El sistema agrega los doce meses del año seleccionado.
-4. La tabla muestra asignado, gastado, restante y porcentaje ponderado por rubro.
+4. La tabla muestra asignado, arrastre, disponible, gastado, restante y porcentaje ponderado por rubro.
 
 ### US-003 — Asignar porcentajes mensuales
 
@@ -81,6 +81,19 @@ Como usuario, quiero saber cuándo gasté más de lo asignado en un rubro.
 1. El gasto real del rubro supera el monto asignado.
 2. El restante se muestra con signo negativo.
 3. La interfaz no oculta ni recorta el valor.
+
+### US-006 — Arrastrar saldos entre meses
+
+Como usuario, quiero que el saldo restante de cada rubro pase al mes siguiente para no perderlo ni ignorar un faltante.
+
+**Flujo:**
+
+1. El sistema calcula el restante de cada rubro en el mes.
+2. El restante de gastos necesarios pasa al disponible de gastos no necesarios del mes siguiente.
+3. El restante de gastos no necesarios pasa al disponible de gastos no necesarios del mes siguiente.
+4. El restante de inversión pasa al disponible de inversión del mes siguiente.
+5. Los restantes positivos y negativos se arrastran.
+6. Diciembre del año n pasa a enero del año n+1.
 
 ## 4. Requisitos funcionales
 
@@ -118,7 +131,7 @@ Cada columna debe listar los movimientos del mes con tres subcolumnas:
 - `Descripción`.
 - `Valor`.
 
-Al final de cada columna debe mostrarse su total. Las columnas de gastos necesarios, gastos no necesarios e inversión deben mostrar además su monto asignado y su restante disponible. La columna de ingresos debe mostrar el total de ingresos y el monto sin asignar.
+Al final de cada columna debe mostrarse su total. Las columnas de gastos necesarios, gastos no necesarios e inversión deben mostrar además su monto asignado, el arrastre recibido, el disponible y el restante. La columna de ingresos debe mostrar el total de ingresos y el monto sin asignar.
 
 Las columnas deben mostrar un estado vacío cuando no tengan movimientos. La vista debe mantener las cuatro columnas alineadas y apilarse verticalmente en pantallas estrechas.
 
@@ -138,13 +151,13 @@ Con un mes seleccionado, el usuario debe poder editar el porcentaje de cada uno 
 
 ### FR-005 — Cálculo del monto asignado
 
-El monto asignado a cada rubro se calcula como:
+El monto asignado base a cada rubro se calcula como:
 
 ```text
 asignado = ingresos_del_mes * porcentaje / 100
 ```
 
-El resultado se normaliza a dos decimales con `Decimal`.
+El resultado se normaliza a dos decimales con `Decimal`. El disponible añade el arrastre del mes anterior según FR-019.
 
 **Verificación:** pruebas con ingresos y porcentajes que producen centavos.
 
@@ -153,7 +166,8 @@ El resultado se normaliza a dos decimales con `Decimal`.
 El restante de cada rubro se calcula como:
 
 ```text
-restante = asignado - gasto_real_del_rubro
+disponible = asignado + arrastre
+restante = disponible - gasto_real_del_rubro
 ```
 
 El restante puede ser negativo.
@@ -182,22 +196,31 @@ Si el cálculo produce un valor negativo por redondeo, se normaliza a `0.00`.
 
 Cuando no hay un mes seleccionado, la vista debe mostrar una tabla agregada con el balance general del año seleccionado. La vista anual no lista movimientos individuales.
 
-La tabla anual debe incluir:
+La tabla anual debe incluir, por rubro:
 
-- Ingresos totales del año.
-- Monto asignado total por rubro.
-- Gasto real total por rubro.
-- Restante total por rubro.
-- Porcentaje ponderado por rubro.
-- Monto sin asignar del año.
+- Monto asignado base anual.
+- Arrastre recibido.
+- Disponible.
+- Gasto real anual.
+- Restante.
+- Porcentaje ponderado.
 
-El monto asignado anual es la suma de los montos asignados de cada mes. El porcentaje ponderado se calcula como:
+El monto asignado anual es la suma de los montos base de cada mes. El porcentaje ponderado se calcula como:
 
 ```text
 porcentaje_ponderado = asignado_anual / ingresos_anuales * 100
 ```
 
 Si no hay ingresos anuales, el porcentaje ponderado es `0.00`.
+
+La tabla anual debe ser coherente con el arrastre:
+
+- En necesarios, `arrastre` es `0.00` y el restante se muestra como el monto transferido a no necesarios.
+- En no necesarios, `arrastre` incluye el saldo inicial de enero más las transferencias de necesarios del año.
+- En inversión, `arrastre` es el saldo inicial de enero.
+- `disponible = asignado + arrastre`.
+- El restante de no necesarios e inversión es el saldo final del año.
+- No se suman restantes mensuales de forma ingenua, porque el saldo de necesarios se transfiere a no necesarios y se contaría dos veces.
 
 **Verificación:** pruebas con meses de distintos ingresos y porcentajes.
 
@@ -267,18 +290,24 @@ La respuesta mensual debe incluir los totales por rubro y los movimientos de las
     "NECESARIO": {
       "porcentaje": "50.00",
       "asignado": "2500.00",
+      "arrastre": "0.00",
+      "disponible": "2500.00",
       "gastado": "1000.00",
       "restante": "1500.00"
     },
     "NO_NECESARIO": {
       "porcentaje": "30.00",
       "asignado": "1500.00",
+      "arrastre": "1500.00",
+      "disponible": "3000.00",
       "gastado": "300.00",
-      "restante": "1200.00"
+      "restante": "2700.00"
     },
     "INVERSION": {
       "porcentaje": "20.00",
       "asignado": "1000.00",
+      "arrastre": "0.00",
+      "disponible": "1000.00",
       "gastado": "200.00",
       "restante": "800.00"
     }
@@ -326,7 +355,7 @@ Los movimientos se ordenan por fecha y, ante empate, por id. Cada item incluye `
 
 ### FR-016 — Respuesta anual
 
-La respuesta anual usa la estructura agregada de `rubros`, con `mes: null` y `porcentaje` como porcentaje ponderado. No incluye `movimientos`.
+La respuesta anual usa la estructura agregada de `rubros`, con `mes: null`, `porcentaje` ponderado, `arrastre` y `disponible`. No incluye `movimientos`.
 
 **Verificación:** la respuesta anual incluye `mes: null`, los tres rubros y los porcentajes ponderados, y no lista movimientos individuales.
 
@@ -347,6 +376,53 @@ La vista debe mostrar:
 La nueva funcionalidad no debe modificar el endpoint `/api/resumen` ni los cálculos globales existentes.
 
 **Verificación:** las pruebas existentes de resumen siguen pasando.
+
+### FR-019 — Arrastre mensual entre rubros
+
+El saldo restante de cada mes debe arrastrarse al mes siguiente:
+
+- El restante de `NECESARIO` se suma al disponible de `NO_NECESARIO` del mes siguiente.
+- El restante de `NO_NECESARIO` se suma al disponible de `NO_NECESARIO` del mes siguiente.
+- El restante de `INVERSION` se suma al disponible de `INVERSION` del mes siguiente.
+- Los restantes positivos y negativos se arrastran.
+- El arrastre de necesarios no se suma al disponible de necesarios del mes siguiente.
+
+**Verificación:** pruebas con restantes positivos y negativos en los tres rubros.
+
+### FR-020 — Arrastre entre años
+
+El arrastre no se reinicia en enero. Diciembre del año `n` pasa a enero del año `n+1` con las mismas reglas de FR-019.
+
+**Verificación:** prueba con diciembre de un año y enero del año siguiente.
+
+### FR-021 — Inicio del historial y recálculo dinámico
+
+El cálculo del arrastre parte del primer mes con ingresos, gastos o asignaciones. Antes de ese mes el arrastre es `0.00`.
+
+El arrastre se calcula dinámicamente al consultar. Si se modifican ingresos, gastos o porcentajes de un mes anterior, se recalculan todos los meses posteriores.
+
+**Verificación:** prueba que modifica un mes anterior y verifica el cambio en el mes siguiente.
+
+### FR-022 — Contrato de arrastre
+
+Cada rubro de la respuesta debe incluir:
+
+- `porcentaje`.
+- `asignado`.
+- `arrastre`.
+- `disponible`.
+- `gastado`.
+- `restante`.
+
+`sin_asignar` sigue siendo el ingreso no asignado y no incluye el arrastre.
+
+**Verificación:** pruebas de schema y API.
+
+### FR-023 — Vista anual con arrastre
+
+La tabla anual debe mostrar `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante` por rubro, con la semántica definida en FR-009.
+
+**Verificación:** prueba de componente y API con arrastre entre meses.
 
 ## 5. Requisitos no funcionales
 
@@ -389,14 +465,20 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 - **BR-003:** la suma de los tres porcentajes no supera 100.
 - **BR-004:** un mes sin asignación se interpreta con 0% en los tres rubros.
 - **BR-005:** `asignado = ingresos_del_periodo * porcentaje / 100`.
-- **BR-006:** `restante = asignado - gastado`; puede ser negativo.
+- **BR-006:** `disponible = asignado + arrastre` y `restante = disponible - gastado`; puede ser negativo.
 - **BR-007:** `sin_asignar = ingresos - suma(asignados)`; se normaliza a cero si el redondeo lo deja negativo.
 - **BR-008:** el rubro de inversión usa gastos `INVERSION`.
-- **BR-009:** la vista anual suma los meses del año seleccionado.
+- **BR-009:** la vista anual usa la cadena de arrastre y no suma restantes mensuales de forma ingenua.
 - **BR-010:** el porcentaje anual es ponderado por los ingresos anuales.
 - **BR-011:** sin ingresos en el periodo, los montos asignados son `0.00`.
 - **BR-012:** el año actual es el valor por defecto.
 - **BR-013:** un mes sin movimientos sigue siendo consultable y editable.
+- **BR-014:** el restante de necesarios pasa al disponible de no necesarios del mes siguiente.
+- **BR-015:** el restante de no necesarios pasa al disponible de no necesarios del mes siguiente.
+- **BR-016:** el restante de inversión pasa al disponible de inversión del mes siguiente.
+- **BR-017:** los restantes positivos y negativos se arrastran.
+- **BR-018:** el arrastre no se reinicia en enero; diciembre pasa a enero del año siguiente.
+- **BR-019:** el arrastre se recalcula dinámicamente al cambiar datos históricos.
 
 ## 7. Casos límite y errores
 
@@ -412,6 +494,12 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 - Año sin datos: tabla con ceros y año actual disponible.
 - Error de red: la vista conserva los datos y permite reintentar.
 - Cambio de ingresos después de asignar: los montos asignados y restantes se recalculan con los ingresos actuales.
+- Octubre con restante positivo en necesarios: noviembre lo recibe en no necesarios.
+- Octubre con restante negativo en necesarios: noviembre lo descuenta de no necesarios.
+- Diciembre con restante: enero del año siguiente lo recibe según las mismas reglas.
+- Sin datos anteriores: el primer mes parte con arrastre `0.00`.
+- Cambio de un mes anterior: se recalculan todos los meses posteriores.
+- Vista anual: no se suman restantes mensuales de forma ingenua; se usa la semántica de FR-009.
 
 ## 8. Fuera de alcance
 
@@ -430,8 +518,8 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 |---|---|---|
 | AC-001 | La pestaña `Balance mensual` existe y es accesible. | Prueba de `App`. |
 | AC-002 | Los selectores de año y mes funcionan y el año actual es el inicial. | Prueba de componente. |
-| AC-003 | La vista mensual muestra cuatro columnas con fecha, descripción, valor, total y restante donde aplica. | Prueba de componente y API. |
-| AC-004 | La vista anual aparece con `Todos` y agrega los meses del año. | Prueba de API y componente. |
+| AC-003 | La vista mensual muestra cuatro columnas con fecha, descripción, valor, total, arrastre, disponible y restante donde aplica. | Prueba de componente y API. |
+| AC-004 | La vista anual aparece con `Todos` e incluye arrastre y disponible. | Prueba de API y componente. |
 | AC-005 | Los porcentajes se guardan por mes y no afectan otros meses. | Prueba de integración. |
 | AC-006 | La suma menor que 100 muestra el monto sin asignar. | Prueba de cálculo y componente. |
 | AC-007 | La suma mayor que 100 devuelve `422`. | Prueba de API. |
@@ -442,6 +530,12 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 | AC-012 | Las rutas y schemas aparecen en OpenAPI. | Prueba de OpenAPI. |
 | AC-013 | La vista maneja carga, error, vacío y guardado. | Pruebas de componentes. |
 | AC-014 | El resumen global y las funcionalidades existentes no cambian. | Suite completa. |
+| AC-015 | El restante positivo de necesarios se suma a no necesarios del mes siguiente. | Prueba de cálculo y API. |
+| AC-016 | Los restantes negativos se arrastran y reducen el disponible siguiente. | Prueba de cálculo y API. |
+| AC-017 | No necesarios e inversión se arrastran de forma independiente. | Prueba de cálculo y API. |
+| AC-018 | Diciembre pasa a enero del año siguiente sin reinicio. | Prueba de integración. |
+| AC-019 | El arrastre se recalcula al modificar datos históricos. | Prueba de integración. |
+| AC-020 | La vista anual muestra Asignado, Arrastre, Disponible, Gastado y Restante sin doble conteo. | Prueba de cálculo, API y componente. |
 
 ## 10. Decisiones de negocio y supuestos
 
@@ -505,11 +599,24 @@ La funcionalidad es local, de un solo usuario y sin autenticación. No se expone
 
 **Decisión aprobada:** se usa una vista mensual de cuatro columnas y la vista anual sigue siendo una tabla agregada.
 
+### D-007 — Arrastre de saldos
+
+**Propuesta:** arrastrar los saldos entre meses sin reiniciar en enero. El restante de necesarios pasa a no necesarios del mes siguiente; no necesarios e inversión se arrastran de forma independiente. Positivos y negativos se arrastran. La vista anual usa Asignado, Arrastre, Disponible, Gastado y Restante.
+
+**Alternativas:** no arrastrar; reiniciar en enero; arrastrar necesarios a necesarios; mostrar solo el saldo mensual.
+
+**Impacto:** cálculo mensual/anual, contrato de API, UI y pruebas.
+
+**Decisión aprobada:** se acepta el arrastre continuo, incluyendo diciembre a enero del año siguiente, y el cálculo dinámico.
+
 ## 11. Resultado de validación
 
 La revisión 2 fue validada el 2026-10-31 con 256 pruebas de backend y 88 de frontend, migración `0007` y smoke test de producción. La vista mensual de cuatro columnas, los porcentajes mensuales, el monto sin asignar y la vista anual ponderada quedaron cubiertos por pruebas de cálculo, API, integración y componentes.
+
+La revisión 3 fue validada el 2026-10-31 con 272 pruebas de backend y 99 de frontend, versión 1.1.0 y smoke test de producción. El arrastre continuo, el paso diciembre→enero, el contrato con `arrastre`/`disponible` y la tabla anual sin doble conteo quedaron cubiertos.
 
 ## 12. Historial de revisiones
 
 - Revisión 1: especificación inicial aprobada.
 - Revisión 2: vista mensual de cuatro columnas con movimientos, fecha y totales; vista anual agregada.
+- Revisión 3: arrastre continuo de saldos, necesario a no necesario, no necesario e inversión independientes, y tabla anual con arrastre.

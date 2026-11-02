@@ -4,13 +4,13 @@ Aplicación local para registrar ingresos y gastos personales, clasificar los ga
 
 El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
-Versión actual: **1.0.0**.
+Versión actual: **1.1.0**.
 
 ## Estado
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 2) está implementado y validado, y las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 3) está implementado y validado, y las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -344,7 +344,9 @@ La contabilización devuelve `404` si no existe, `409` si ya fue contabilizado o
 
 ## API de balance mensual
 
-La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión. Cada columna incluye sus movimientos con fecha, descripción y valor; las tres columnas de gasto/inversión muestran además el monto asignado y el restante.
+La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión. Cada columna incluye sus movimientos con fecha, descripción y valor; las tres columnas de gasto/inversión muestran además el monto asignado, el arrastre, el disponible y el restante.
+
+El restante de necesarios pasa al disponible de no necesarios del mes siguiente. No necesarios e inversión se arrastran de forma independiente. Los saldos positivos y negativos se conservan, y diciembre pasa a enero del año siguiente sin reinicio.
 
 ### Consultar el balance
 
@@ -353,7 +355,7 @@ La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no
 - `GET /api/balance-mensual`: balance anual del año actual.
 - `GET /api/balance-mensual/periodos`: devuelve `{"anio_actual": 2026, "anios": [2026, 2025]}`.
 
-Los importes y porcentajes son strings con dos decimales. El restante puede ser negativo.
+Cada rubro incluye `porcentaje`, `asignado`, `arrastre`, `disponible`, `gastado` y `restante`. Los importes y porcentajes son strings con dos decimales. El restante puede ser negativo y se calcula como `disponible - gastado`. La tabla anual muestra `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante`.
 
 ### Guardar porcentajes mensuales
 
@@ -369,7 +371,7 @@ Los importes y porcentajes son strings con dos decimales. El restante puede ser 
 }
 ```
 
-Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula con los ingresos del mes y el porcentaje correspondiente, y el restante es el asignado menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos del año.
+Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula con los ingresos del mes y el porcentaje correspondiente; el disponible añade el arrastre y el restante es el disponible menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos del año.
 
 ## API de gráficas
 

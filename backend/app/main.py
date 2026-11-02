@@ -8,7 +8,7 @@ from app.api.routes.incomes import router as incomes_router
 from app.api.routes.monthly_balance import router as monthly_balance_router
 from app.api.routes.summary import router as summary_router
 
-app = FastAPI(title="Py Personal Finance API", version="1.0.0")
+app = FastAPI(title="Py Personal Finance API", version="1.1.0")
 app.include_router(health_router, prefix="/api", tags=["health"])
 app.include_router(incomes_router, prefix="/api")
 app.include_router(expenses_router, prefix="/api")

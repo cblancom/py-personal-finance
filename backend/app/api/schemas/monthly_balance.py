@@ -12,6 +12,8 @@ Percentage = Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places
 class BalanceRubroRead(BaseModel):
     porcentaje: Decimal
     asignado: Decimal
+    arrastre: Decimal
+    disponible: Decimal
     gastado: Decimal
     restante: Decimal
 

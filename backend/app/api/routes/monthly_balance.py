@@ -33,6 +33,8 @@ def _rubro_read(rubro: RubroBalance) -> BalanceRubroRead:
     return BalanceRubroRead(
         porcentaje=rubro.percentage,
         asignado=rubro.assigned,
+        arrastre=rubro.carryover,
+        disponible=rubro.available,
         gastado=rubro.spent,
         restante=rubro.remaining,
     )

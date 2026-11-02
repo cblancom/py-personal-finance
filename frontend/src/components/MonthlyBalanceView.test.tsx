@@ -41,18 +41,24 @@ const monthly: MonthlyBalance = {
     NECESARIO: {
       porcentaje: '50.00',
       asignado: '2500.00',
+      arrastre: '0.00',
+      disponible: '2500.00',
       gastado: '1000.00',
       restante: '1500.00',
     },
     NO_NECESARIO: {
       porcentaje: '30.00',
       asignado: '1500.00',
+      arrastre: '0.00',
+      disponible: '1500.00',
       gastado: '300.00',
       restante: '1200.00',
     },
     INVERSION: {
       porcentaje: '20.00',
       asignado: '1000.00',
+      arrastre: '0.00',
+      disponible: '1000.00',
       gastado: '200.00',
       restante: '800.00',
     },
@@ -99,18 +105,24 @@ const updated: MonthlyBalance = {
     NECESARIO: {
       porcentaje: '40.00',
       asignado: '2000.00',
+      arrastre: '0.00',
+      disponible: '2000.00',
       gastado: '1000.00',
       restante: '1000.00',
     },
     NO_NECESARIO: {
       porcentaje: '40.00',
       asignado: '2000.00',
+      arrastre: '0.00',
+      disponible: '2000.00',
       gastado: '300.00',
       restante: '1700.00',
     },
     INVERSION: {
       porcentaje: '20.00',
       asignado: '1000.00',
+      arrastre: '0.00',
+      disponible: '1000.00',
       gastado: '200.00',
       restante: '800.00',
     },
@@ -126,18 +138,24 @@ const annual: AnnualBalance = {
     NECESARIO: {
       porcentaje: '33.33',
       asignado: '1666.65',
+      arrastre: '0.00',
+      disponible: '1666.65',
       gastado: '1000.00',
       restante: '666.65',
     },
     NO_NECESARIO: {
       porcentaje: '33.33',
       asignado: '1666.65',
+      arrastre: '500.00',
+      disponible: '2166.65',
       gastado: '300.00',
-      restante: '1366.65',
+      restante: '1866.65',
     },
     INVERSION: {
       porcentaje: '33.34',
       asignado: '1666.70',
+      arrastre: '0.00',
+      disponible: '1666.70',
       gastado: '200.00',
       restante: '1466.70',
     },
@@ -171,6 +189,14 @@ describe('MonthlyBalanceView', () => {
       expect.any(AbortSignal),
     )
     expect(screen.getAllByText('33.33%')).toHaveLength(2)
+    expect(screen.getByText('Arrastre')).toBeInTheDocument()
+    expect(screen.getByText('Disponible')).toBeInTheDocument()
+    expect(screen.getByText('$ 500,00')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'En necesarios, el restante se transfiere a no necesarios.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('loads the four monthly columns', async () => {
@@ -195,6 +221,9 @@ describe('MonthlyBalanceView', () => {
     expect(screen.getByText('Cine')).toBeInTheDocument()
     expect(screen.getByText('Fondo indexado')).toBeInTheDocument()
     expect(screen.getByText('Sin asignar')).toBeInTheDocument()
+    expect(screen.getAllByText('Arrastre')).toHaveLength(3)
+    expect(screen.getAllByText('Disponible')).toHaveLength(3)
+    expect(screen.getByText('Restante transferido')).toBeInTheDocument()
     expect(getMonthlyBalanceMock).toHaveBeenCalledWith(
       currentYear,
       10,

@@ -120,6 +120,8 @@ def test_monthly_balance_returns_movements_and_remaining(client: TestClient):
     assert body["rubros"]["NECESARIO"] == {
         "porcentaje": "50.00",
         "asignado": "2500.00",
+        "arrastre": "0.00",
+        "disponible": "2500.00",
         "gastado": "1000.00",
         "restante": "1500.00",
     }
@@ -156,6 +158,8 @@ def test_monthly_balance_shows_unassigned_and_negative_remaining(client: TestCli
     assert body["rubros"]["NECESARIO"] == {
         "porcentaje": "50.00",
         "asignado": "500.00",
+        "arrastre": "0.00",
+        "disponible": "500.00",
         "gastado": "600.00",
         "restante": "-100.00",
     }
@@ -227,6 +231,8 @@ def test_annual_balance_uses_weighted_percentages(client: TestClient):
     assert body["rubros"]["NECESARIO"] == {
         "porcentaje": "33.33",
         "asignado": "1000.00",
+        "arrastre": "0.00",
+        "disponible": "1000.00",
         "gastado": "300.00",
         "restante": "700.00",
     }
@@ -298,3 +304,267 @@ def test_invalid_month_query_returns_422(client: TestClient):
     response = client.get("/api/balance-mensual?mes=13")
 
     assert response.status_code == 422
+
+
+def test_necessary_remaining_carries_to_next_non_necessary(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_expense(
+        client,
+        amount="100.00",
+        movement_date=iso_date(year, 10, 2),
+        expense_type="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 11, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="100.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=11,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}&mes=11")
+
+    assert response.status_code == 200
+    assert response.json()["rubros"]["NECESARIO"]["restante"] == "0.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["asignado"] == "1000.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["arrastre"] == "900.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["disponible"] == "1900.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["restante"] == "1900.00"
+
+
+def test_negative_necessary_remaining_reduces_next_non_necessary(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_expense(
+        client,
+        amount="1200.00",
+        movement_date=iso_date(year, 10, 2),
+        expense_type="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 11, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="100.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=11,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}&mes=11")
+
+    assert response.status_code == 200
+    assert response.json()["rubros"]["NO_NECESARIO"]["restante"] == "800.00"
+
+
+def test_non_necessary_and_investment_carry_independently(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_expense(
+        client,
+        amount="200.00",
+        movement_date=iso_date(year, 10, 2),
+        expense_type="NO_NECESARIO",
+    )
+    create_expense(
+        client,
+        amount="100.00",
+        movement_date=iso_date(year, 10, 3),
+        expense_type="INVERSION",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 11, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="0.00",
+            non_necessary="50.00",
+            investment="50.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=11,
+            necessary="0.00",
+            non_necessary="50.00",
+            investment="50.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}&mes=11")
+
+    assert response.status_code == 200
+    assert response.json()["rubros"]["NO_NECESARIO"]["arrastre"] == "300.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["restante"] == "800.00"
+    assert response.json()["rubros"]["INVERSION"]["arrastre"] == "400.00"
+    assert response.json()["rubros"]["INVERSION"]["restante"] == "900.00"
+
+
+def test_december_carryover_continues_into_next_january(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 12, 1))
+    create_expense(
+        client,
+        amount="100.00",
+        movement_date=iso_date(year, 12, 2),
+        expense_type="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year + 1, 1, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=12,
+            necessary="100.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year + 1,
+            month=1,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year + 1}&mes=1")
+
+    assert response.status_code == 200
+    assert response.json()["rubros"]["NO_NECESARIO"]["restante"] == "1900.00"
+
+
+def test_carryover_recalculates_after_previous_allocation_change(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 11, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="100.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=11,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    before = client.get(f"/api/balance-mensual?anio={year}&mes=11").json()
+    assert before["rubros"]["NO_NECESARIO"]["restante"] == "2000.00"
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="0.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    after = client.get(f"/api/balance-mensual?anio={year}&mes=11").json()
+    assert after["rubros"]["NO_NECESARIO"]["restante"] == "1000.00"
+
+
+def test_annual_balance_includes_carryover(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 1, 1))
+    create_expense(
+        client,
+        amount="100.00",
+        movement_date=iso_date(year, 1, 2),
+        expense_type="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 2, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=1,
+            necessary="100.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=2,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}")
+
+    assert response.status_code == 200
+    assert response.json()["rubros"]["NECESARIO"]["restante"] == "900.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["asignado"] == "1000.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["arrastre"] == "900.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["disponible"] == "1900.00"
+    assert response.json()["rubros"]["NO_NECESARIO"]["restante"] == "1900.00"
