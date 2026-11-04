@@ -33,6 +33,7 @@ const pending: ImportPendingRow = {
   descripcion: 'Mercado',
   valor: '120.50',
   categoria: null,
+  tipo: null,
   tipo_gasto: null,
   estado: 'PENDIENTE',
   errores: [
@@ -175,20 +176,55 @@ describe('PendingView', () => {
     ).toBeDisabled()
   })
 
-  it('shows category only for income pending rows', async () => {
+  it('shows the income type selector only for income pending rows', async () => {
     listPendingMock.mockResolvedValue([
       {
         ...pending,
         tipo_movimiento: 'INGRESO',
         categoria: 'Nómina',
+        tipo: 'NO_NECESARIO',
         tipo_gasto: null,
         errores: [],
       },
     ])
     render(<PendingView onBack={vi.fn()} onChanged={vi.fn()} />)
 
-    expect(await screen.findByLabelText('Categoría')).toHaveValue('Nómina')
+    expect(await screen.findByLabelText('Tipo (opcional)')).toHaveValue(
+      'NO_NECESARIO',
+    )
     expect(screen.queryByLabelText('Tipo de gasto')).not.toBeInTheDocument()
+  })
+
+  it('saves an income type without sending the raw category', async () => {
+    const incomePending: ImportPendingRow = {
+      ...pending,
+      tipo_movimiento: 'INGRESO',
+      categoria: 'Nómina',
+      tipo: null,
+      tipo_gasto: null,
+      errores: [{ campo: 'tipo', mensaje: 'El tipo de ingreso no es válido.' }],
+    }
+    listPendingMock.mockResolvedValue([incomePending])
+    updatePendingMock.mockResolvedValue({
+      ...incomePending,
+      tipo: 'NO_NECESARIO',
+      errores: [],
+    })
+    render(<PendingView onBack={vi.fn()} onChanged={vi.fn()} />)
+
+    await screen.findByText('Mercado')
+    fireEvent.change(screen.getByLabelText('Tipo (opcional)'), {
+      target: { value: 'NO_NECESARIO' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(updatePendingMock).toHaveBeenCalled())
+    expect(updatePendingMock).toHaveBeenCalledWith(1, {
+      fecha: '2026-10-21',
+      descripcion: 'Mercado',
+      valor: '120.50',
+      tipo: 'NO_NECESARIO',
+    })
   })
 
   it('shows a load error and retries', async () => {

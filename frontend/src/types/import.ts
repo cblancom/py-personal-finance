@@ -31,6 +31,7 @@ export interface ImportPendingRow {
   descripcion: string | null
   valor: string | null
   categoria: string | null
+  tipo: ExpenseType | null
   tipo_gasto: ExpenseType | null
   estado: ImportRowStatus
   errores: ImportRowError[]
@@ -51,5 +52,6 @@ export interface ImportPendingUpdate {
   descripcion?: string | null
   valor?: string | null
   categoria?: string | null
+  tipo?: ExpenseType | null
   tipo_gasto?: ExpenseType | null
 }

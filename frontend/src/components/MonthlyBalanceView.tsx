@@ -138,6 +138,9 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
                 Arrastre
               </th>
               <th scope="col" className="amount">
+                Ingresos tipados
+              </th>
+              <th scope="col" className="amount">
                 Disponible
               </th>
               <th scope="col" className="amount">
@@ -158,6 +161,7 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
                   <td>{rubro.porcentaje}%</td>
                   <td className="amount">{formatMoney(rubro.asignado)}</td>
                   <td className="amount">{formatMoney(rubro.arrastre)}</td>
+                  <td className="amount">{formatMoney(rubro.ingresos_tipados)}</td>
                   <td className="amount">{formatMoney(rubro.disponible)}</td>
                   <td className="amount">{formatMoney(rubro.gastado)}</td>
                   <td className={negative ? 'amount balance-negative' : 'amount'}>
@@ -169,6 +173,10 @@ function AnnualBalanceTable({ balance }: { balance: AnnualBalance }) {
           </tbody>
         </table>
       </div>
+      <p className="balance-annual__note">
+        Los ingresos con tipo se suman al disponible del rubro y no se
+        reparten por porcentajes.
+      </p>
       <p className="balance-annual__note">
         En necesarios, el restante se transfiere a no necesarios.
       </p>
@@ -467,6 +475,10 @@ export function MonthlyBalanceView() {
                   value: formatMoney(balance.rubros.NECESARIO.arrastre),
                 },
                 {
+                  label: 'Ingresos tipados',
+                  value: formatMoney(balance.rubros.NECESARIO.ingresos_tipados),
+                },
+                {
                   label: 'Disponible',
                   value: formatMoney(balance.rubros.NECESARIO.disponible),
                 },
@@ -494,6 +506,10 @@ export function MonthlyBalanceView() {
                 {
                   label: 'Arrastre',
                   value: formatMoney(balance.rubros.NO_NECESARIO.arrastre),
+                },
+                {
+                  label: 'Ingresos tipados',
+                  value: formatMoney(balance.rubros.NO_NECESARIO.ingresos_tipados),
                 },
                 {
                   label: 'Disponible',
@@ -525,6 +541,10 @@ export function MonthlyBalanceView() {
                   value: formatMoney(balance.rubros.INVERSION.arrastre),
                 },
                 {
+                  label: 'Ingresos tipados',
+                  value: formatMoney(balance.rubros.INVERSION.ingresos_tipados),
+                },
+                {
                   label: 'Disponible',
                   value: formatMoney(balance.rubros.INVERSION.disponible),
                 },
@@ -536,6 +556,10 @@ export function MonthlyBalanceView() {
               ]}
             />
           </div>
+          <p className="balance-annual__note">
+            Los ingresos con tipo se suman al disponible del rubro y no se
+            reparten por porcentajes.
+          </p>
         </>
       )}
     </section>

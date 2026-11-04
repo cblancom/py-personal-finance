@@ -22,7 +22,7 @@ const income: Income = {
   id: 1,
   fecha: '2026-10-21',
   descripcion: 'Salario',
-  categoria: null,
+  tipo: null,
   valor: '1000.00',
 }
 
@@ -40,7 +40,7 @@ describe('IncomeSection', () => {
       id: 2,
       fecha: '2026-10-21',
       descripcion: 'Salario',
-      categoria: null,
+      tipo: null,
       valor: '1500.50',
     })
     const onChanged = vi.fn().mockResolvedValue(undefined)

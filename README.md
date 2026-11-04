@@ -4,13 +4,13 @@ Aplicación local para registrar ingresos y gastos personales, clasificar los ga
 
 El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
-Versión actual: **1.1.0**.
+Versión actual: **1.2.0**.
 
 ## Estado
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 3) está implementado y validado, y las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 3) está implementado y validado, las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas, y el tipo opcional de ingresos (`010-tipo-ingresos`) está implementado y validado.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -205,7 +205,7 @@ Ejemplo de creación:
 ```bash
 curl -X POST http://localhost:8000/api/ingresos \
   -H 'Content-Type: application/json' \
-  -d '{"fecha":"2026-10-21","descripcion":"Salario","valor":"1500.50"}'
+  -d '{"fecha":"2026-10-21","descripcion":"Salario","tipo":"NO_NECESARIO","valor":"1500.50"}'
 ```
 
 Respuesta:
@@ -214,12 +214,15 @@ Respuesta:
 {
   "fecha": "2026-10-21",
   "descripcion": "Salario",
+  "tipo": "NO_NECESARIO",
   "valor": "1500.50",
   "id": 1
 }
 ```
 
 `valor` se transporta como string decimal para preservar la precisión. La entrada acepta string o número; el frontend enviará string. `descripcion` se recorta y debe tener entre 1 y 200 caracteres. `fecha` usa ISO `YYYY-MM-DD`.
+
+`tipo` es opcional y acepta `NECESARIO`, `NO_NECESARIO`, `INVERSION` o `null`. Un ingreso sin tipo se reparte según los porcentajes mensuales. Un ingreso con tipo no se pondera: se suma directamente al disponible del rubro correspondiente en el mes de la fecha. La antigua columna `categoria` fue reemplazada por `tipo` mediante la migración destructiva `0008_add_income_type`; los valores históricos que no coincidían con un tipo se perdieron.
 
 ## API de gastos
 
@@ -323,7 +326,7 @@ Las filas completas se incorporan a la contabilidad. Las filas incompletas, inv�
 
 Si se elimina un gasto o ingreso importado, la fila de importación conserva el estado `IMPORTADO` y su referencia al movimiento queda nula; no se reencola automáticamente.
 
-Para gastos, `Tipo de gasto` se normaliza a `NECESARIO`, `NO_NECESARIO` o `INVERSION`; `Categoría` se acepta como alias de la misma columna. Para ingresos, la categoría es opcional.
+Para gastos, `Tipo de gasto` se normaliza a `NECESARIO`, `NO_NECESARIO` o `INVERSION`; `Categoría` se acepta como alias de la misma columna. Para ingresos, `Categoría`/`Tipo` se interpreta como tipo opcional: los valores válidos se normalizan, el vacío deja el ingreso sin tipo y un valor desconocido deja la fila pendiente con un error en `tipo`. El texto original se conserva en `filas_importacion.categoria` para auditoría.
 
 Errores:
 
@@ -335,7 +338,7 @@ Errores:
 
 - `GET /api/importaciones/pendientes`: lista los pendientes.
 - `GET /api/importaciones/pendientes/count`: devuelve `{"pendientes": n}`.
-- `PUT /api/importaciones/pendientes/{id}`: actualiza fecha, descripción y valor; para gastos usa `tipo_gasto`, para ingresos `categoria`.
+- `PUT /api/importaciones/pendientes/{id}`: actualiza fecha, descripción y valor; para gastos usa `tipo_gasto`, para ingresos `tipo`.
 - `POST /api/importaciones/pendientes/{id}/contabilizar`: revalida y crea el movimiento.
 - `DELETE /api/importaciones/pendientes/{id}`: descarta lógicamente el pendiente.
 - `DELETE /api/importaciones/pendientes`: descarta globalmente todos los pendientes y devuelve `{"descartados": n}`. Es idempotente y no crea ni elimina movimientos.
@@ -344,9 +347,9 @@ La contabilización devuelve `404` si no existe, `409` si ya fue contabilizado o
 
 ## API de balance mensual
 
-La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión. Cada columna incluye sus movimientos con fecha, descripción y valor; las tres columnas de gasto/inversión muestran además el monto asignado, el arrastre, el disponible y el restante.
+La vista mensual muestra cuatro columnas: ingresos, gastos necesarios, gastos no necesarios e inversión. Cada columna incluye sus movimientos con fecha, descripción y valor; las tres columnas de gasto/inversión muestran además el monto asignado, el arrastre, los ingresos tipados, el disponible y el restante.
 
-El restante de necesarios pasa al disponible de no necesarios del mes siguiente. No necesarios e inversión se arrastran de forma independiente. Los saldos positivos y negativos se conservan, y diciembre pasa a enero del año siguiente sin reinicio.
+Los ingresos con tipo se suman directamente al disponible de su rubro y no se reparten por porcentajes. Los ingresos sin tipo forman la base porcentual y el monto sin asignar. El restante de necesarios pasa al disponible de no necesarios del mes siguiente. No necesarios e inversión se arrastran de forma independiente. Los saldos positivos y negativos se conservan, y diciembre pasa a enero del año siguiente sin reinicio.
 
 ### Consultar el balance
 
@@ -355,7 +358,7 @@ El restante de necesarios pasa al disponible de no necesarios del mes siguiente.
 - `GET /api/balance-mensual`: balance anual del año actual.
 - `GET /api/balance-mensual/periodos`: devuelve `{"anio_actual": 2026, "anios": [2026, 2025]}`.
 
-Cada rubro incluye `porcentaje`, `asignado`, `arrastre`, `disponible`, `gastado` y `restante`. Los importes y porcentajes son strings con dos decimales. El restante puede ser negativo y se calcula como `disponible - gastado`. La tabla anual muestra `Asignado`, `Arrastre`, `Disponible`, `Gastado` y `Restante`.
+Cada rubro incluye `porcentaje`, `asignado`, `arrastre`, `ingresos_tipados`, `disponible`, `gastado` y `restante`. Los importes y porcentajes son strings con dos decimales. La invariante es `disponible = asignado + arrastre + ingresos_tipados`; el restante puede ser negativo y se calcula como `disponible - gastado`. La tabla anual muestra `Asignado`, `Arrastre`, `Ingresos tipados`, `Disponible`, `Gastado` y `Restante`.
 
 ### Guardar porcentajes mensuales
 
@@ -371,7 +374,7 @@ Cada rubro incluye `porcentaje`, `asignado`, `arrastre`, `disponible`, `gastado`
 }
 ```
 
-Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula con los ingresos del mes y el porcentaje correspondiente; el disponible añade el arrastre y el restante es el disponible menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos del año.
+Cada porcentaje debe estar entre 0 y 100, con máximo dos decimales. La suma no puede superar 100; si es menor, el resto se muestra como dinero sin asignar. El monto asignado se calcula solo con los ingresos sin tipo del mes y el porcentaje correspondiente; el disponible añade el arrastre y los ingresos tipados, y el restante es el disponible menos el gasto real. La vista anual usa el porcentaje ponderado por los ingresos sin tipo del año.
 
 ## API de gráficas
 

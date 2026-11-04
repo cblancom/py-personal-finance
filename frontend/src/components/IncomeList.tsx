@@ -1,5 +1,5 @@
 import type { Income } from '../types/income'
-import { formatDate, formatMoney } from '../utils/format'
+import { expenseTypeLabel, formatDate, formatMoney } from '../utils/format'
 
 interface IncomeListProps {
   incomes: Income[]
@@ -20,7 +20,7 @@ export function IncomeList({ incomes, onEdit, onDelete }: IncomeListProps) {
             <tr>
               <th>Fecha</th>
               <th>Descripción</th>
-              <th>Categoría</th>
+              <th>Tipo</th>
               <th className="amount">Valor</th>
               <th className="actions">Acciones</th>
             </tr>
@@ -30,7 +30,7 @@ export function IncomeList({ incomes, onEdit, onDelete }: IncomeListProps) {
               <tr key={income.id}>
                 <td>{formatDate(income.fecha)}</td>
                 <td>{income.descripcion}</td>
-                <td>{income.categoria ?? '—'}</td>
+                <td>{income.tipo ? expenseTypeLabel(income.tipo) : '—'}</td>
                 <td className="amount">{formatMoney(income.valor)}</td>
                 <td className="movement-actions">
                   <button

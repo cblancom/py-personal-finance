@@ -36,6 +36,7 @@ const pending: ImportPendingRow = {
   descripcion: 'Mercado',
   valor: '120.50',
   categoria: null,
+  tipo: null,
   tipo_gasto: null,
   estado: 'PENDIENTE',
   errores: [{ campo: 'tipo_gasto', mensaje: 'El tipo de gasto es obligatorio.' }],

@@ -84,6 +84,7 @@ def _pending_read(row: ImportRow) -> ImportPendingRowRead:
         descripcion=row.description,
         valor=row.amount,
         categoria=row.category,
+        tipo=ExpenseType(row.income_type) if row.income_type else None,
         tipo_gasto=ExpenseType(row.expense_type) if row.expense_type else None,
         estado=row.status,
         errores=[ImportRowError.model_validate(error) for error in row.errors],

@@ -13,6 +13,7 @@ class BalanceRubroRead(BaseModel):
     porcentaje: Decimal
     asignado: Decimal
     arrastre: Decimal
+    ingresos_tipados: Decimal
     disponible: Decimal
     gastado: Decimal
     restante: Decimal

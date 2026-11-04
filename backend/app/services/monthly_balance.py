@@ -17,6 +17,7 @@ class RubroBalance:
     percentage: Decimal
     assigned: Decimal
     carryover: Decimal
+    typed_incomes: Decimal
     available: Decimal
     spent: Decimal
     remaining: Decimal
@@ -58,6 +59,7 @@ class AvailablePeriods:
 class MonthChain:
     month_start: date
     incomes: Decimal
+    typed_incomes: dict[ExpenseType, Decimal]
     percentages: dict[ExpenseType, Decimal]
     assigned: dict[ExpenseType, Decimal]
     carryover: dict[ExpenseType, Decimal]
@@ -110,19 +112,27 @@ def calculate_rubros(
     spent: Mapping[ExpenseType, Decimal],
     percentages: Mapping[ExpenseType, Decimal],
     carryover: Mapping[ExpenseType, Decimal] | None = None,
+    typed_incomes: Mapping[ExpenseType, Decimal] | None = None,
 ) -> dict[ExpenseType, RubroBalance]:
     assigned = calculate_assigned(incomes, percentages)
     carry = carryover or {}
+    typed = typed_incomes or {}
     return {
         expense_type: RubroBalance(
             percentage=normalize_percentage(percentages[expense_type]),
             assigned=assigned[expense_type],
             carryover=normalize_money(carry.get(expense_type, ZERO)),
-            available=normalize_money(assigned[expense_type] + carry.get(expense_type, ZERO)),
+            typed_incomes=normalize_money(typed.get(expense_type, ZERO)),
+            available=normalize_money(
+                assigned[expense_type]
+                + carry.get(expense_type, ZERO)
+                + typed.get(expense_type, ZERO)
+            ),
             spent=normalize_money(spent.get(expense_type, ZERO)),
             remaining=normalize_money(
                 assigned[expense_type]
                 + carry.get(expense_type, ZERO)
+                + typed.get(expense_type, ZERO)
                 - spent.get(expense_type, ZERO)
             ),
         )
@@ -177,15 +187,32 @@ def _monthly_income_totals(
     db: Session,
     start: date,
     end: date,
-) -> dict[date, Decimal]:
+) -> tuple[dict[date, Decimal], dict[date, dict[ExpenseType, Decimal]]]:
     year_expression = func.extract("year", Income.date)
     month_expression = func.extract("month", Income.date)
     rows = db.execute(
-        select(year_expression, month_expression, func.sum(Income.amount))
+        select(
+            year_expression,
+            month_expression,
+            Income.income_type,
+            func.sum(Income.amount),
+        )
         .where(Income.date >= start, Income.date < end)
-        .group_by(year_expression, month_expression)
+        .group_by(year_expression, month_expression, Income.income_type)
     ).all()
-    return {date(int(year), int(month), 1): normalize_money(total) for year, month, total in rows}
+
+    totals: dict[date, Decimal] = {}
+    typed_totals: dict[date, dict[ExpenseType, Decimal]] = {}
+    for year, month, income_type, total in rows:
+        month_start = date(int(year), int(month), 1)
+        amount = normalize_money(total)
+        totals[month_start] = normalize_money(totals.get(month_start, ZERO) + amount)
+        if income_type is not None:
+            month_typed = typed_totals.setdefault(month_start, _empty_totals())
+            expense_type = ExpenseType(income_type)
+            month_typed[expense_type] = normalize_money(month_typed[expense_type] + amount)
+
+    return totals, typed_totals
 
 
 def _monthly_expense_totals(
@@ -239,7 +266,7 @@ def _allocation_percentages(allocation: MonthlyAllocation | None) -> dict[Expens
 
 
 def _build_chain(db: Session, start: date, end: date) -> list[MonthChain]:
-    incomes = _monthly_income_totals(db, start, end)
+    incomes, typed_incomes = _monthly_income_totals(db, start, end)
     expenses = _monthly_expense_totals(db, start, end)
     allocations = _allocations_by_month(db, start, end)
     previous_remaining = _empty_totals()
@@ -247,11 +274,13 @@ def _build_chain(db: Session, start: date, end: date) -> list[MonthChain]:
 
     for month_start in _iter_months(start, end):
         income = incomes.get(month_start, ZERO)
+        typed = typed_incomes.get(month_start, _empty_totals())
+        untyped_income = normalize_money(income - sum(typed.values(), ZERO))
         spent = expenses.get(month_start, _empty_totals())
         percentages = _allocation_percentages(
             allocations.get((month_start.year, month_start.month))
         )
-        assigned = calculate_assigned(income, percentages)
+        assigned = calculate_assigned(untyped_income, percentages)
         carryover = {
             ExpenseType.NECESSARY: ZERO,
             ExpenseType.NON_NECESSARY: normalize_money(
@@ -261,7 +290,9 @@ def _build_chain(db: Session, start: date, end: date) -> list[MonthChain]:
             ExpenseType.INVESTMENT: previous_remaining[ExpenseType.INVESTMENT],
         }
         available = {
-            expense_type: normalize_money(assigned[expense_type] + carryover[expense_type])
+            expense_type: normalize_money(
+                assigned[expense_type] + carryover[expense_type] + typed[expense_type]
+            )
             for expense_type in ExpenseType
         }
         remaining = {
@@ -272,13 +303,14 @@ def _build_chain(db: Session, start: date, end: date) -> list[MonthChain]:
             MonthChain(
                 month_start=month_start,
                 incomes=income,
+                typed_incomes=typed,
                 percentages=percentages,
                 assigned=assigned,
                 carryover=carryover,
                 available=available,
                 spent=spent,
                 remaining=remaining,
-                unassigned=calculate_unassigned(income, assigned),
+                unassigned=calculate_unassigned(untyped_income, assigned),
             )
         )
         previous_remaining = remaining
@@ -292,6 +324,7 @@ def _to_rubros(chain: MonthChain) -> dict[ExpenseType, RubroBalance]:
             percentage=chain.percentages[expense_type],
             assigned=chain.assigned[expense_type],
             carryover=chain.carryover[expense_type],
+            typed_incomes=chain.typed_incomes[expense_type],
             available=chain.available[expense_type],
             spent=chain.spent[expense_type],
             remaining=chain.remaining[expense_type],
@@ -433,7 +466,19 @@ def get_annual_balance(db: Session, year: int) -> MonthlyBalance:
         )
         for expense_type in ExpenseType
     }
+    typed_incomes = {
+        expense_type: normalize_money(
+            sum((month.typed_incomes[expense_type] for month in year_months), ZERO)
+        )
+        for expense_type in ExpenseType
+    }
     incomes = normalize_money(sum((month.incomes for month in year_months), ZERO))
+    untyped_incomes = normalize_money(
+        sum(
+            (month.incomes - sum(month.typed_incomes.values(), ZERO) for month in year_months),
+            ZERO,
+        )
+    )
     unassigned = normalize_money(sum((month.unassigned for month in year_months), ZERO))
     necessary_transfers = normalize_money(
         sum((month.remaining[ExpenseType.NECESSARY] for month in year_months), ZERO)
@@ -448,12 +493,16 @@ def get_annual_balance(db: Session, year: int) -> MonthlyBalance:
         ExpenseType.INVESTMENT: previous_remaining[ExpenseType.INVESTMENT],
     }
     available = {
-        expense_type: normalize_money(base_assigned[expense_type] + carryover[expense_type])
+        expense_type: normalize_money(
+            base_assigned[expense_type] + carryover[expense_type] + typed_incomes[expense_type]
+        )
         for expense_type in ExpenseType
     }
     remaining = {
         ExpenseType.NECESSARY: normalize_money(
-            base_assigned[ExpenseType.NECESSARY] - spent[ExpenseType.NECESSARY]
+            base_assigned[ExpenseType.NECESSARY]
+            + typed_incomes[ExpenseType.NECESSARY]
+            - spent[ExpenseType.NECESSARY]
         ),
         ExpenseType.NON_NECESSARY: normalize_money(
             available[ExpenseType.NON_NECESSARY] - spent[ExpenseType.NON_NECESSARY]
@@ -467,10 +516,11 @@ def get_annual_balance(db: Session, year: int) -> MonthlyBalance:
         expense_type: RubroBalance(
             percentage=calculate_weighted_percentage(
                 base_assigned[expense_type],
-                incomes,
+                untyped_incomes,
             ),
             assigned=base_assigned[expense_type],
             carryover=carryover[expense_type],
+            typed_incomes=typed_incomes[expense_type],
             available=available[expense_type],
             spent=spent[expense_type],
             remaining=remaining[expense_type],

@@ -4,6 +4,7 @@ export interface BalanceRubro {
   porcentaje: string
   asignado: string
   arrastre: string
+  ingresos_tipados: string
   disponible: string
   gastado: string
   restante: string

@@ -42,6 +42,7 @@ const monthly: MonthlyBalance = {
       porcentaje: '50.00',
       asignado: '2500.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '2500.00',
       gastado: '1000.00',
       restante: '1500.00',
@@ -50,14 +51,16 @@ const monthly: MonthlyBalance = {
       porcentaje: '30.00',
       asignado: '1500.00',
       arrastre: '0.00',
-      disponible: '1500.00',
+      ingresos_tipados: '500.00',
+      disponible: '2000.00',
       gastado: '300.00',
-      restante: '1200.00',
+      restante: '1700.00',
     },
     INVERSION: {
       porcentaje: '20.00',
       asignado: '1000.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '1000.00',
       gastado: '200.00',
       restante: '800.00',
@@ -106,6 +109,7 @@ const updated: MonthlyBalance = {
       porcentaje: '40.00',
       asignado: '2000.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '2000.00',
       gastado: '1000.00',
       restante: '1000.00',
@@ -114,6 +118,7 @@ const updated: MonthlyBalance = {
       porcentaje: '40.00',
       asignado: '2000.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '2000.00',
       gastado: '300.00',
       restante: '1700.00',
@@ -122,6 +127,7 @@ const updated: MonthlyBalance = {
       porcentaje: '20.00',
       asignado: '1000.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '1000.00',
       gastado: '200.00',
       restante: '800.00',
@@ -139,6 +145,7 @@ const annual: AnnualBalance = {
       porcentaje: '33.33',
       asignado: '1666.65',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '1666.65',
       gastado: '1000.00',
       restante: '666.65',
@@ -147,14 +154,16 @@ const annual: AnnualBalance = {
       porcentaje: '33.33',
       asignado: '1666.65',
       arrastre: '500.00',
-      disponible: '2166.65',
+      ingresos_tipados: '250.00',
+      disponible: '2416.65',
       gastado: '300.00',
-      restante: '1866.65',
+      restante: '2116.65',
     },
     INVERSION: {
       porcentaje: '33.34',
       asignado: '1666.70',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '1666.70',
       gastado: '200.00',
       restante: '1466.70',
@@ -190,8 +199,15 @@ describe('MonthlyBalanceView', () => {
     )
     expect(screen.getAllByText('33.33%')).toHaveLength(2)
     expect(screen.getByText('Arrastre')).toBeInTheDocument()
+    expect(screen.getByText('Ingresos tipados')).toBeInTheDocument()
     expect(screen.getByText('Disponible')).toBeInTheDocument()
+    expect(screen.getByText('$ 250,00')).toBeInTheDocument()
     expect(screen.getByText('$ 500,00')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Los ingresos con tipo se suman al disponible del rubro y no se reparten por porcentajes.',
+      ),
+    ).toBeInTheDocument()
     expect(
       screen.getByText(
         'En necesarios, el restante se transfiere a no necesarios.',
@@ -222,8 +238,15 @@ describe('MonthlyBalanceView', () => {
     expect(screen.getByText('Fondo indexado')).toBeInTheDocument()
     expect(screen.getByText('Sin asignar')).toBeInTheDocument()
     expect(screen.getAllByText('Arrastre')).toHaveLength(3)
+    expect(screen.getAllByText('Ingresos tipados')).toHaveLength(3)
     expect(screen.getAllByText('Disponible')).toHaveLength(3)
+    expect(screen.getByText('$ 500,00')).toBeInTheDocument()
     expect(screen.getByText('Restante transferido')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Los ingresos con tipo se suman al disponible del rubro y no se reparten por porcentajes.',
+      ),
+    ).toBeInTheDocument()
     expect(getMonthlyBalanceMock).toHaveBeenCalledWith(
       currentYear,
       10,

@@ -34,6 +34,7 @@ def _rubro_read(rubro: RubroBalance) -> BalanceRubroRead:
         porcentaje=rubro.percentage,
         asignado=rubro.assigned,
         arrastre=rubro.carryover,
+        ingresos_tipados=rubro.typed_incomes,
         disponible=rubro.available,
         gastado=rubro.spent,
         restante=rubro.remaining,

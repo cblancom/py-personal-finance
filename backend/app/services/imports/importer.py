@@ -191,6 +191,9 @@ def import_file(
                 description=validated.description,
                 amount=validated.amount,
                 category=validated.category,
+                income_type=(
+                    validated.income_type.value if validated.income_type is not None else None
+                ),
                 expense_type=(
                     validated.expense_type.value if validated.expense_type is not None else None
                 ),
@@ -233,7 +236,9 @@ def import_file(
                 movement_row: Income | Expense = Income(
                     date=validated.date,
                     description=validated.description,
-                    category=validated.category,
+                    income_type=(
+                        validated.income_type.value if validated.income_type is not None else None
+                    ),
                     amount=validated.amount,
                 )
             else:

@@ -1,8 +1,10 @@
+import type { ExpenseType } from './expense'
+
 export interface Income {
   id: number
   fecha: string
   descripcion: string
-  categoria: string | null
+  tipo: ExpenseType | null
   valor: string
 }
 

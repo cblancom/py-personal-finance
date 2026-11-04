@@ -19,7 +19,7 @@ PAYLOAD = {
 UPDATED_PAYLOAD = {
     "fecha": "2026-11-01",
     "descripcion": "Salario ajustado",
-    "categoria": "Salario",
+    "tipo": "NO_NECESARIO",
     "valor": "1750.75",
 }
 
@@ -32,19 +32,36 @@ def test_create_income(client: TestClient):
         "id": 1,
         "fecha": "2026-10-21",
         "descripcion": "Salario",
-        "categoria": None,
+        "tipo": None,
         "valor": "1500.50",
     }
 
 
-def test_create_income_with_category(client: TestClient):
+def test_create_income_with_type(client: TestClient):
     response = client.post(
         "/api/ingresos",
-        json={**PAYLOAD, "categoria": "  Salario  "},
+        json={**PAYLOAD, "tipo": "NO_NECESARIO"},
     )
 
     assert response.status_code == 201
-    assert response.json()["categoria"] == "Salario"
+    assert response.json()["tipo"] == "NO_NECESARIO"
+
+
+def test_create_income_with_blank_type(client: TestClient):
+    response = client.post(
+        "/api/ingresos",
+        json={**PAYLOAD, "tipo": "   "},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["tipo"] is None
+
+
+@pytest.mark.parametrize("tipo", ["OTRO", "necesario", "NO NECESARIO"])
+def test_create_income_rejects_invalid_type(client: TestClient, tipo: str):
+    response = client.post("/api/ingresos", json={**PAYLOAD, "tipo": tipo})
+
+    assert response.status_code == 422
 
 
 def test_list_incomes_returns_empty_list(client: TestClient):
@@ -206,6 +223,26 @@ def test_database_rejects_non_positive_amount(
                 date=date(2026, 10, 21),
                 description="Salario",
                 amount=valor,
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+    finally:
+        session.rollback()
+        session.close()
+
+
+def test_database_rejects_invalid_income_type(
+    test_session_factory: sessionmaker[Session],
+):
+    session = test_session_factory()
+    try:
+        session.add(
+            Income(
+                date=date(2026, 10, 21),
+                description="Salario",
+                income_type="OTRO",
+                amount=Decimal("100.00"),
             )
         )
         with pytest.raises(IntegrityError):

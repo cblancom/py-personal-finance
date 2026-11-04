@@ -77,7 +77,7 @@ const income: Income = {
   id: 1,
   fecha: '2026-10-21',
   descripcion: 'Salario',
-  categoria: null,
+  tipo: null,
   valor: '750.00',
 }
 
@@ -104,6 +104,7 @@ const annualBalance: AnnualBalance = {
       porcentaje: '50.00',
       asignado: '500.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '500.00',
       gastado: '200.00',
       restante: '300.00',
@@ -112,6 +113,7 @@ const annualBalance: AnnualBalance = {
       porcentaje: '30.00',
       asignado: '300.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '300.00',
       gastado: '0.00',
       restante: '300.00',
@@ -120,6 +122,7 @@ const annualBalance: AnnualBalance = {
       porcentaje: '20.00',
       asignado: '200.00',
       arrastre: '0.00',
+      ingresos_tipados: '0.00',
       disponible: '200.00',
       gastado: '0.00',
       restante: '200.00',
@@ -315,7 +318,7 @@ describe('App', () => {
       id: 2,
       fecha: '2026-10-22',
       descripcion: 'Consultoría',
-      categoria: null,
+      tipo: null,
       valor: '1500.50',
     }
     const updatedSummary: Summary = {

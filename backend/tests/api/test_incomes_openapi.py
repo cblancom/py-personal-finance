@@ -11,3 +11,7 @@ def test_income_routes_are_documented_in_openapi():
     assert "get" in paths["/api/ingresos/{income_id}"]
     assert "put" in paths["/api/ingresos/{income_id}"]
     assert "delete" in paths["/api/ingresos/{income_id}"]
+
+    income_schema = app.openapi()["components"]["schemas"]["IncomeRead"]["properties"]
+    assert "tipo" in income_schema
+    assert "categoria" not in income_schema

@@ -95,7 +95,15 @@ def update_pending(
     else:
         expense_type = row.expense_type
 
+    if "tipo" in changes:
+        income_type = changes["tipo"]
+    elif "categoria" in changes:
+        income_type = None
+    else:
+        income_type = row.income_type
+
     expense_type = cast(ExpenseType | str | None, expense_type)
+    income_type = cast(ExpenseType | str | None, income_type)
 
     validated = validate_import_row(
         movement_type=row.movement_type,
@@ -104,12 +112,14 @@ def update_pending(
         valor=changes.get("valor", row.amount),
         categoria=category,
         tipo_gasto=expense_type,
+        tipo_ingreso=income_type,
     )
 
     row.date = validated.date
     row.description = validated.description
     row.amount = validated.amount
     row.category = validated.category
+    row.income_type = validated.income_type.value if validated.income_type is not None else None
     row.expense_type = validated.expense_type.value if validated.expense_type is not None else None
     row.errors = _errors(validated.errors)
     row.fingerprint = validated.fingerprint
@@ -136,6 +146,7 @@ def commit_pending(db: Session, pending_id: int) -> ImportRow:
         valor=row.amount,
         categoria=row.category,
         tipo_gasto=row.expense_type,
+        tipo_ingreso=row.income_type,
     )
 
     if not validated.is_valid:
@@ -147,7 +158,9 @@ def commit_pending(db: Session, pending_id: int) -> ImportRow:
         movement: Income | Expense = Income(
             date=validated.date,
             description=validated.description,
-            category=validated.category,
+            income_type=(
+                validated.income_type.value if validated.income_type is not None else None
+            ),
             amount=validated.amount,
         )
     else:

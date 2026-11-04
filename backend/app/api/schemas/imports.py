@@ -33,6 +33,7 @@ class ImportPendingRowRead(BaseModel):
     descripcion: str | None
     valor: Decimal | None
     categoria: str | None
+    tipo: ExpenseType | None
     tipo_gasto: ExpenseType | None
     estado: str
     errores: list[ImportRowError]
@@ -58,4 +59,5 @@ class ImportPendingUpdate(BaseModel):
         decimal_places=2,
     )
     categoria: str | None = Field(default=None, max_length=100)
+    tipo: ExpenseType | None = None
     tipo_gasto: ExpenseType | None = None

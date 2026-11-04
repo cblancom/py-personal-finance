@@ -41,7 +41,7 @@ def build_xlsx() -> bytes:
 def test_import_csv_income(client: TestClient):
     response = post_csv(
         client,
-        HEADER + "2026-10-21,Salario,1500.50,Nómina\n",
+        HEADER + "2026-10-21,Salario,1500.50,No Necesario\n",
     )
 
     assert response.status_code == 201
@@ -59,11 +59,43 @@ def test_import_csv_income(client: TestClient):
             "id": 1,
             "fecha": "2026-10-21",
             "descripcion": "Salario",
-            "categoria": "Nómina",
+            "tipo": "NO_NECESARIO",
             "valor": "1500.50",
         }
     ]
     assert client.get("/api/resumen").json()["total_ingresos"] == "1500.50"
+
+
+def test_import_income_unknown_category_is_pending_and_can_be_corrected(
+    client: TestClient,
+):
+    content = HEADER + "2026-10-21,Salario,1500.50,Nómina\n"
+
+    response = post_csv(client, content)
+
+    assert response.status_code == 201
+    assert response.json()["filas_importadas"] == 0
+    assert response.json()["filas_pendientes"] == 1
+
+    pending = client.get("/api/importaciones/pendientes").json()[0]
+    assert pending["categoria"] == "Nómina"
+    assert pending["tipo"] is None
+    assert pending["errores"][0]["campo"] == "tipo"
+
+    updated = client.put(
+        f"/api/importaciones/pendientes/{pending['id']}",
+        json={"tipo": "NO_NECESARIO"},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["categoria"] == "Nómina"
+    assert updated.json()["tipo"] == "NO_NECESARIO"
+    assert updated.json()["errores"] == []
+
+    committed = client.post(f"/api/importaciones/pendientes/{pending['id']}/contabilizar")
+
+    assert committed.status_code == 200
+    assert client.get("/api/ingresos").json()[0]["tipo"] == "NO_NECESARIO"
 
 
 def test_import_csv_expense_with_pending_row(
@@ -135,7 +167,7 @@ def test_delete_imported_income_keeps_import_row(
     client: TestClient,
     test_session_factory: sessionmaker[Session],
 ):
-    content = HEADER + "2026-10-21,Salario,1500.50,Nómina\n"
+    content = HEADER + "2026-10-21,Salario,1500.50,No Necesario\n"
     imported = post_csv(client, content)
     assert imported.status_code == 201
     income = client.get("/api/ingresos").json()[0]
@@ -174,7 +206,11 @@ def test_duplicate_within_the_same_file_is_left_pending(
     client: TestClient,
     test_session_factory: sessionmaker[Session],
 ):
-    content = HEADER + "2026-10-21,Salario,100.00,Nómina\n" + "2026-10-21,Salario,100.00,Nómina\n"
+    content = (
+        HEADER
+        + "2026-10-21,Salario,100.00,No Necesario\n"
+        + "2026-10-21,Salario,100.00,No Necesario\n"
+    )
 
     response = post_csv(client, content)
 
@@ -217,7 +253,7 @@ def test_duplicate_import_is_left_pending(
     client: TestClient,
     test_session_factory: sessionmaker[Session],
 ):
-    content = HEADER + "2026-10-21,Salario,1500.50,Nómina\n"
+    content = HEADER + "2026-10-21,Salario,1500.50,No Necesario\n"
 
     assert post_csv(client, content).status_code == 201
     second = post_csv(client, content)

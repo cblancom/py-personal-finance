@@ -82,5 +82,20 @@ def test_calculate_rubros_adds_carryover_to_available_and_remaining():
 
     assert rubros[ExpenseType.NON_NECESSARY].assigned == Decimal("1000.00")
     assert rubros[ExpenseType.NON_NECESSARY].carryover == Decimal("500.00")
+    assert rubros[ExpenseType.NON_NECESSARY].typed_incomes == Decimal("0.00")
+    assert rubros[ExpenseType.NON_NECESSARY].available == Decimal("1500.00")
+    assert rubros[ExpenseType.NON_NECESSARY].remaining == Decimal("1300.00")
+
+
+def test_calculate_rubros_adds_typed_income_to_available_and_remaining():
+    rubros = calculate_rubros(
+        Decimal("1000.00"),
+        {ExpenseType.NON_NECESSARY: Decimal("200.00")},
+        percentages(necessary="0.00", non_necessary="100.00", investment="0.00"),
+        typed_incomes={ExpenseType.NON_NECESSARY: Decimal("500.00")},
+    )
+
+    assert rubros[ExpenseType.NON_NECESSARY].assigned == Decimal("1000.00")
+    assert rubros[ExpenseType.NON_NECESSARY].typed_incomes == Decimal("500.00")
     assert rubros[ExpenseType.NON_NECESSARY].available == Decimal("1500.00")
     assert rubros[ExpenseType.NON_NECESSARY].remaining == Decimal("1300.00")

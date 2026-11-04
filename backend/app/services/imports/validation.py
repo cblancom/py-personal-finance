@@ -20,6 +20,7 @@ class ValidatedRow:
     description: str | None = None
     amount: Decimal | None = None
     category: str | None = None
+    income_type: ExpenseType | None = None
     expense_type: ExpenseType | None = None
     fingerprint: str | None = None
     errors: list[ValidationIssue] = field(default_factory=list)
@@ -43,6 +44,7 @@ def validate_import_row(
     valor: object,
     categoria: object = None,
     tipo_gasto: ExpenseType | str | None = None,
+    tipo_ingreso: ExpenseType | str | None = None,
 ) -> ValidatedRow:
     movement = (
         movement_type.value
@@ -136,6 +138,32 @@ def validate_import_row(
             row.category = normalize_income_category(categoria)
         except ValueError as exc:
             row.errors.append(ValidationIssue(field="categoria", message=str(exc)))
+        else:
+            if tipo_ingreso is not None:
+                try:
+                    row.income_type = (
+                        tipo_ingreso
+                        if isinstance(tipo_ingreso, ExpenseType)
+                        else ExpenseType(tipo_ingreso)
+                    )
+                except ValueError:
+                    row.errors.append(
+                        ValidationIssue(
+                            field="tipo",
+                            message="El tipo de ingreso no es válido.",
+                        )
+                    )
+            elif row.category is not None:
+                income_type = normalize_expense_type(row.category)
+                if income_type is None:
+                    row.errors.append(
+                        ValidationIssue(
+                            field="tipo",
+                            message="El tipo de ingreso no es válido.",
+                        )
+                    )
+                else:
+                    row.income_type = income_type
 
     if (
         row.is_valid

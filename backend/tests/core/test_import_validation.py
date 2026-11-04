@@ -7,20 +7,21 @@ from app.db.models import ExpenseType, ImportMovementType
 from app.services.imports import validate_import_row
 
 
-def test_valid_income_with_optional_category():
+def test_valid_income_with_optional_type():
     row = validate_import_row(
         movement_type="INGRESO",
         fecha="2026-10-21",
         descripcion="  Salario  ",
         valor="1.500,50",
-        categoria="  Nómina  ",
+        categoria="  No Necesario  ",
     )
 
     assert row.is_valid
     assert row.date == date(2026, 10, 21)
     assert row.description == "Salario"
     assert row.amount == Decimal("1500.50")
-    assert row.category == "Nómina"
+    assert row.category == "No Necesario"
+    assert row.income_type == ExpenseType.NON_NECESSARY
     assert row.expense_type is None
     assert row.fingerprint is not None
 
@@ -35,6 +36,7 @@ def test_valid_income_without_category():
 
     assert row.is_valid
     assert row.category is None
+    assert row.income_type is None
     assert row.fingerprint is not None
 
 
@@ -80,6 +82,37 @@ def test_expense_category_must_be_known():
     assert not row.is_valid
     assert row.errors[0].field == "tipo_gasto"
     assert row.errors[0].message == "El tipo de gasto no es válido."
+
+
+def test_income_unknown_category_is_pending():
+    row = validate_import_row(
+        movement_type="INGRESO",
+        fecha="2026-10-21",
+        descripcion="Salario",
+        valor="100.00",
+        categoria="Nómina",
+    )
+
+    assert not row.is_valid
+    assert row.category == "Nómina"
+    assert row.income_type is None
+    assert row.errors[0].field == "tipo"
+    assert row.errors[0].message == "El tipo de ingreso no es válido."
+
+
+def test_income_explicit_type_overrides_unknown_category():
+    row = validate_import_row(
+        movement_type="INGRESO",
+        fecha="2026-10-21",
+        descripcion="Salario",
+        valor="100.00",
+        categoria="Nómina",
+        tipo_ingreso=ExpenseType.NON_NECESSARY,
+    )
+
+    assert row.is_valid
+    assert row.category == "Nómina"
+    assert row.income_type == ExpenseType.NON_NECESSARY
 
 
 def test_invalid_fields_are_collected_without_fingerprint():

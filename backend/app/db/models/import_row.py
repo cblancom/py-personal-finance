@@ -49,6 +49,10 @@ class ImportRow(Base):
             name="ck_filas_importacion_tipo_gasto_valido",
         ),
         CheckConstraint(
+            "tipo IS NULL OR tipo IN ('NECESARIO', 'NO_NECESARIO', 'INVERSION')",
+            name="ck_filas_importacion_tipo_valido",
+        ),
+        CheckConstraint(
             "tipo_movimiento = 'INGRESO' OR movimiento_ingreso_id IS NULL",
             name="ck_filas_importacion_ingreso_coherente",
         ),
@@ -84,6 +88,7 @@ class ImportRow(Base):
     description: Mapped[str | None] = mapped_column("descripcion", String(200), nullable=True)
     amount: Mapped[Decimal | None] = mapped_column("valor", Numeric(12, 2), nullable=True)
     category: Mapped[str | None] = mapped_column("categoria", String(100), nullable=True)
+    income_type: Mapped[str | None] = mapped_column("tipo", String(20), nullable=True)
     expense_type: Mapped[str | None] = mapped_column("tipo_gasto", String(20), nullable=True)
     status: Mapped[str] = mapped_column(
         "estado",

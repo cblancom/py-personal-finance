@@ -28,6 +28,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 007 | [`007-importacion-movimientos`](007-importacion-movimientos/spec.md) ([plan](007-importacion-movimientos/plan.md), [tareas](007-importacion-movimientos/tasks.md)) | 5 | Importación de ingresos y gastos desde Excel/CSV, staging persistente, corrección manual y control de pendientes | 002, 003, 004, 005 | Validada (T-001 a T-021 completadas) |
 | 008 | [`008-balance-mensual`](008-balance-mensual/spec.md) ([plan](008-balance-mensual/plan.md), [tareas](008-balance-mensual/tasks.md)) | 6 | Balance mensual con arrastre entre meses y años, cuatro columnas, tabla anual y porcentajes mensuales | 002, 003, 004, 005 | Validada (T-001 a T-015 completadas) |
 | 009 | [`009-graficas-gastos`](009-graficas-gastos/spec.md) ([plan](009-graficas-gastos/plan.md), [tareas](009-graficas-gastos/tasks.md)) | 7 | Gráficas mensuales de gastos con barras apiladas y líneas, selector de año y tabla accesible | 003, 005, 008 | Validada (T-001 a T-007 completadas) |
+| 010 | [`010-tipo-ingresos`](010-tipo-ingresos/spec.md) ([plan](010-tipo-ingresos/plan.md), [tareas](010-tipo-ingresos/tasks.md)) | 8 | Tipo opcional de ingresos, asignación directa al disponible y migración destructiva de categoría | 002, 003, 007, 008 | Validada (T-001 a T-008 completadas) |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
 
@@ -69,14 +70,15 @@ Fuera del MVP:
 Orden propuesto, sujeto a nuevas especificaciones:
 
 1. Balance mensual y anual con arrastre (spec 008, revisión 3 validada).
-2. Categorías configurables.
-3. Gráficas de gastos mensuales (spec 009, validada).
-4. Autenticación y aislamiento por usuario.
-5. Presupuestos y metas.
-6. Importación de movimientos desde Excel/CSV (spec 007); exportación CSV posterior.
-7. Búsqueda, filtros y paginación.
-8. Movimientos recurrentes.
-9. CI, observabilidad y respaldos.
+2. Tipo opcional de ingresos (spec 010, validada).
+3. Categorías configurables.
+4. Gráficas de gastos mensuales (spec 009, validada).
+5. Autenticación y aislamiento por usuario.
+6. Presupuestos y metas.
+7. Importación de movimientos desde Excel/CSV (spec 007); exportación CSV posterior.
+8. Búsqueda, filtros y paginación.
+9. Movimientos recurrentes.
+10. CI, observabilidad y respaldos.
 
 La autenticación es obligatoria antes de exponer la aplicación a Internet.
 

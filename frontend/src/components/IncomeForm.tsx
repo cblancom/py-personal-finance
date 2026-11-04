@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
+import { EXPENSE_TYPES, type ExpenseType } from '../types/expense'
 import type { Income, IncomePayload } from '../types/income'
-import { todayIsoDate } from '../utils/format'
+import { expenseTypeLabel, todayIsoDate } from '../utils/format'
 import { validateMovementInput } from '../utils/validation'
 
 interface IncomeFormProps {
@@ -19,7 +20,7 @@ export function IncomeForm({
   const isEditing = initial !== null
   const [fecha, setFecha] = useState(initial?.fecha ?? todayIsoDate())
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '')
-  const [categoria, setCategoria] = useState(initial?.categoria ?? '')
+  const [tipo, setTipo] = useState<ExpenseType | ''>(initial?.tipo ?? '')
   const [valor, setValor] = useState(initial?.valor ?? '')
   const [error, setError] = useState<string | null>(null)
 
@@ -36,7 +37,7 @@ export function IncomeForm({
     onSubmit({
       fecha,
       descripcion: descripcion.trim(),
-      categoria: categoria.trim() || null,
+      tipo: tipo || null,
       valor,
     })
   }
@@ -69,15 +70,22 @@ export function IncomeForm({
       </div>
 
       <div className="field">
-        <label htmlFor="income-categoria">Categoría (opcional)</label>
-        <input
-          id="income-categoria"
-          type="text"
-          maxLength={100}
-          value={categoria}
-          onChange={(event) => setCategoria(event.target.value)}
+        <label htmlFor="income-tipo">Tipo (opcional)</label>
+        <select
+          id="income-tipo"
+          value={tipo}
+          onChange={(event) =>
+            setTipo(event.target.value as ExpenseType | '')
+          }
           disabled={submitting}
-        />
+        >
+          <option value="">Sin tipo</option>
+          {EXPENSE_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {expenseTypeLabel(type)}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="field">

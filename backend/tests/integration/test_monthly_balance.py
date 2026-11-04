@@ -20,10 +20,16 @@ def create_income(
     amount: str,
     movement_date: str,
     description: str = "Ingreso",
+    tipo: str | None = None,
 ) -> None:
     response = client.post(
         "/api/ingresos",
-        json={"fecha": movement_date, "descripcion": description, "valor": amount},
+        json={
+            "fecha": movement_date,
+            "descripcion": description,
+            "tipo": tipo,
+            "valor": amount,
+        },
     )
     assert response.status_code == 201
 
@@ -121,6 +127,7 @@ def test_monthly_balance_returns_movements_and_remaining(client: TestClient):
         "porcentaje": "50.00",
         "asignado": "2500.00",
         "arrastre": "0.00",
+        "ingresos_tipados": "0.00",
         "disponible": "2500.00",
         "gastado": "1000.00",
         "restante": "1500.00",
@@ -159,10 +166,109 @@ def test_monthly_balance_shows_unassigned_and_negative_remaining(client: TestCli
         "porcentaje": "50.00",
         "asignado": "500.00",
         "arrastre": "0.00",
+        "ingresos_tipados": "0.00",
         "disponible": "500.00",
         "gastado": "600.00",
         "restante": "-100.00",
     }
+
+
+def test_typed_income_is_not_weighted_and_adds_to_available(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_income(
+        client,
+        amount="500.00",
+        movement_date=iso_date(year, 10, 2),
+        tipo="NO_NECESARIO",
+    )
+
+    response = update_allocation(
+        client,
+        year=year,
+        month=10,
+        necessary="50.00",
+        non_necessary="50.00",
+        investment="0.00",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ingresos"] == "1500.00"
+    assert body["sin_asignar"] == "0.00"
+    assert body["rubros"]["NECESARIO"]["asignado"] == "500.00"
+    assert body["rubros"]["NECESARIO"]["ingresos_tipados"] == "0.00"
+    assert body["rubros"]["NO_NECESARIO"]["asignado"] == "500.00"
+    assert body["rubros"]["NO_NECESARIO"]["ingresos_tipados"] == "500.00"
+    assert body["rubros"]["NO_NECESARIO"]["disponible"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["restante"] == "1000.00"
+
+
+def test_typed_income_does_not_increase_unassigned(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 10, 1))
+    create_income(
+        client,
+        amount="500.00",
+        movement_date=iso_date(year, 10, 2),
+        tipo="INVERSION",
+    )
+
+    response = update_allocation(
+        client,
+        year=year,
+        month=10,
+        necessary="50.00",
+        non_necessary="0.00",
+        investment="0.00",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sin_asignar"] == "500.00"
+    assert body["rubros"]["INVERSION"]["ingresos_tipados"] == "500.00"
+    assert body["rubros"]["INVERSION"]["disponible"] == "500.00"
+
+
+def test_typed_necessary_income_carries_to_next_non_necessary(client: TestClient):
+    year = date.today().year
+    create_income(
+        client,
+        amount="1000.00",
+        movement_date=iso_date(year, 10, 1),
+        tipo="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 11, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=10,
+            necessary="0.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=11,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}&mes=11")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rubros"]["NO_NECESARIO"]["arrastre"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["disponible"] == "2000.00"
 
 
 def test_monthly_movements_are_ordered_by_date_and_id(client: TestClient):
@@ -232,6 +338,7 @@ def test_annual_balance_uses_weighted_percentages(client: TestClient):
         "porcentaje": "33.33",
         "asignado": "1000.00",
         "arrastre": "0.00",
+        "ingresos_tipados": "0.00",
         "disponible": "1000.00",
         "gastado": "300.00",
         "restante": "700.00",
@@ -239,6 +346,89 @@ def test_annual_balance_uses_weighted_percentages(client: TestClient):
     assert body["rubros"]["NO_NECESARIO"]["porcentaje"] == "66.67"
     assert body["rubros"]["NO_NECESARIO"]["asignado"] == "2000.00"
     assert "movimientos" not in body
+
+
+def test_annual_balance_includes_typed_income_without_double_count(client: TestClient):
+    year = date.today().year
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 1, 1))
+    create_income(
+        client,
+        amount="500.00",
+        movement_date=iso_date(year, 1, 2),
+        tipo="NO_NECESARIO",
+    )
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=1,
+            necessary="50.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ingresos"] == "1500.00"
+    assert body["sin_asignar"] == "500.00"
+    assert body["rubros"]["NECESARIO"]["porcentaje"] == "50.00"
+    assert body["rubros"]["NECESARIO"]["asignado"] == "500.00"
+    assert body["rubros"]["NECESARIO"]["ingresos_tipados"] == "0.00"
+    assert body["rubros"]["NO_NECESARIO"]["asignado"] == "0.00"
+    assert body["rubros"]["NO_NECESARIO"]["ingresos_tipados"] == "500.00"
+    assert body["rubros"]["NO_NECESARIO"]["arrastre"] == "500.00"
+    assert body["rubros"]["NO_NECESARIO"]["disponible"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["restante"] == "1000.00"
+
+
+def test_annual_necessary_typed_income_transfers_to_non_necessary(client: TestClient):
+    year = date.today().year
+    create_income(
+        client,
+        amount="1000.00",
+        movement_date=iso_date(year, 1, 1),
+        tipo="NECESARIO",
+    )
+    create_income(client, amount="1000.00", movement_date=iso_date(year, 2, 1))
+
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=1,
+            necessary="0.00",
+            non_necessary="0.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+    assert (
+        update_allocation(
+            client,
+            year=year,
+            month=2,
+            necessary="0.00",
+            non_necessary="100.00",
+            investment="0.00",
+        ).status_code
+        == 200
+    )
+
+    response = client.get(f"/api/balance-mensual?anio={year}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["rubros"]["NECESARIO"]["ingresos_tipados"] == "1000.00"
+    assert body["rubros"]["NECESARIO"]["restante"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["asignado"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["arrastre"] == "1000.00"
+    assert body["rubros"]["NO_NECESARIO"]["disponible"] == "2000.00"
+    assert body["rubros"]["NO_NECESARIO"]["restante"] == "2000.00"
 
 
 def test_periods_include_data_years_and_current_year(client: TestClient):

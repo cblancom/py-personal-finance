@@ -23,7 +23,7 @@ interface Draft {
   fecha: string
   descripcion: string
   valor: string
-  categoria: string
+  tipo: ExpenseType | ''
   tipo_gasto: ExpenseType | ''
 }
 
@@ -32,7 +32,7 @@ function toDraft(row: ImportPendingRow): Draft {
     fecha: row.fecha ?? '',
     descripcion: row.descripcion ?? '',
     valor: row.valor ?? '',
-    categoria: row.categoria ?? '',
+    tipo: row.tipo ?? '',
     tipo_gasto: row.tipo_gasto ?? '',
   }
 }
@@ -49,7 +49,7 @@ function draftToPayload(
   if (row.tipo_movimiento === 'GASTO') {
     payload.tipo_gasto = draft.tipo_gasto || null
   } else {
-    payload.categoria = draft.categoria || null
+    payload.tipo = draft.tipo || null
   }
   return payload
 }
@@ -354,19 +354,28 @@ export function PendingView({ onBack, onChanged }: PendingViewProps) {
 
                   {row.tipo_movimiento === 'INGRESO' && (
                     <div className="field">
-                      <label htmlFor={`pending-${row.id}-categoria`}>
-                        Categoría
+                      <label htmlFor={`pending-${row.id}-tipo-ingreso`}>
+                        Tipo (opcional)
                       </label>
-                      <input
-                        id={`pending-${row.id}-categoria`}
-                        type="text"
-                        maxLength={100}
-                        value={draft.categoria}
+                      <select
+                        id={`pending-${row.id}-tipo-ingreso`}
+                        value={draft.tipo}
                         onChange={(event) =>
-                          updateDraft(row.id, 'categoria', event.target.value)
+                          updateDraft(
+                            row.id,
+                            'tipo',
+                            event.target.value as ExpenseType | '',
+                          )
                         }
                         disabled={rowActionsDisabled}
-                      />
+                      >
+                        <option value="">Sin tipo</option>
+                        {EXPENSE_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {expenseTypeLabel(type)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   )}
 
