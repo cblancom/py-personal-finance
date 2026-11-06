@@ -96,7 +96,7 @@ function App() {
               className="button button--ghost"
               onClick={() => setView('import')}
             >
-              Importar
+              Importar/Exportar
             </button>
             <button
               type="button"

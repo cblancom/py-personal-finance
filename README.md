@@ -4,13 +4,13 @@ Aplicación local para registrar ingresos y gastos personales, clasificar los ga
 
 El MVP es de un solo usuario, funciona en local y no incluye autenticación.
 
-Versión actual: **1.2.0**.
+Versión actual: **1.3.0**.
 
 ## Estado
 
 La Fase 0 (`001-fundaciones`) está implementada y validada. Las APIs de ingresos (`002-api-ingresos`), gastos (`003-api-gastos`) y resumen (`004-api-resumen`), y la interfaz MVP (`005-interfaz-mvp`), están implementadas y validadas. El backend, el frontend y el entorno Docker de desarrollo están operativos.
 
-La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 3) está implementado y validado, las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas, y el tipo opcional de ingresos (`010-tipo-ingresos`) está implementado y validado.
+La interfaz permite registrar, listar, editar y eliminar ingresos y gastos, importar y exportar movimientos desde Excel/CSV, gestionar pendientes, consultar el resumen y muestra los importes en pesos colombianos (COP). La entrega Docker de producción (`006-entrega-docker`) está implementada y validada, la importación (`007-importacion-movimientos`, revisión 3) también está implementada y validada, el balance mensual (`008-balance-mensual`, revisión 3) está implementado y validado, las gráficas de gastos (`009-graficas-gastos`) están implementadas y validadas, el tipo opcional de ingresos (`010-tipo-ingresos`) está implementado y validado, y la exportación de movimientos (`012-exportacion-movimientos`) está implementada y validada.
 
 El estado detallado está en [`specs/README.md`](specs/README.md) y en los `tasks.md` de cada especificación.
 
@@ -344,6 +344,25 @@ Errores:
 - `DELETE /api/importaciones/pendientes`: descarta globalmente todos los pendientes y devuelve `{"descartados": n}`. Es idempotente y no crea ni elimina movimientos.
 
 La contabilización devuelve `404` si no existe, `409` si ya fue contabilizado o descartado y `422` si todavía tiene errores.
+
+## API de exportación
+
+La vista `Importar/Exportar` permite descargar los ingresos o gastos guardados en un formato compatible con la importación.
+
+Endpoints:
+
+- `GET /api/exportaciones/ingresos?formato=csv|xlsx`
+- `GET /api/exportaciones/gastos?formato=csv|xlsx`
+
+Los archivos se descargan como adjuntos:
+
+- Ingresos: `Fecha,Descripcion,Valor,Categoria`. `Categoria` contiene el tipo opcional o queda vacía.
+- Gastos: `Fecha,Descripcion,Valor,Tipo de gasto`.
+- Fechas ISO `YYYY-MM-DD` y valores con dos decimales.
+- CSV en UTF-8 con BOM, delimitador coma y decimal con punto.
+- XLSX con una hoja `Ingresos` o `Gastos`.
+
+La exportación incluye solo movimientos guardados. No incluye asignaciones mensuales, pendientes, lotes de importación, IDs ni historial. No sustituye un backup completo de PostgreSQL. Reimportar un archivo en la misma base duplica los movimientos; la restauración esperada es sobre una base limpia.
 
 ## API de balance mensual
 

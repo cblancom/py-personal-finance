@@ -212,10 +212,10 @@ describe('App', () => {
     render(<App />)
 
     await screen.findByRole('heading', { name: 'Resumen' })
-    fireEvent.click(screen.getByRole('button', { name: 'Importar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Importar/Exportar' }))
 
     expect(
-      screen.getByRole('heading', { name: 'Importar movimientos' }),
+      screen.getByRole('heading', { name: 'Importar/Exportar movimientos' }),
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }))

@@ -5,6 +5,7 @@ import type {
   ImportBatch,
   ImportMovementType,
 } from '../types/import'
+import { ExportSection } from './ExportSection'
 
 interface ImportViewProps {
   onBack: () => void
@@ -73,7 +74,7 @@ export function ImportView({
     <section className="import-view" aria-labelledby="import-title">
       <div className="view-header">
         <div>
-          <h2 id="import-title">Importar movimientos</h2>
+          <h2 id="import-title">Importar/Exportar movimientos</h2>
           <p>
             Sube un archivo CSV o XLSX con fecha, descripción, valor y tipo de
             gasto. En ingresos, la categoría es opcional.
@@ -134,6 +135,8 @@ export function ImportView({
           </button>
         </div>
       </form>
+
+      <ExportSection />
 
       {result && (
         <section

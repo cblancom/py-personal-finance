@@ -40,6 +40,20 @@ afterEach(() => {
 })
 
 describe('ImportView', () => {
+  it('shows the export section inside the import view', () => {
+    render(<ImportView onBack={vi.fn()} onImported={vi.fn()} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Exportar movimientos' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Exportar ingresos' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Exportar gastos' }),
+    ).toBeInTheDocument()
+  })
+
   it('requires a file before submitting', () => {
     render(<ImportView onBack={vi.fn()} onImported={vi.fn()} />)
 

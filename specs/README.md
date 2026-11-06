@@ -30,6 +30,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 009 | [`009-graficas-gastos`](009-graficas-gastos/spec.md) ([plan](009-graficas-gastos/plan.md), [tareas](009-graficas-gastos/tasks.md)) | 7 | Gráficas mensuales de gastos con barras apiladas y líneas, selector de año y tabla accesible | 003, 005, 008 | Validada (T-001 a T-007 completadas) |
 | 010 | [`010-tipo-ingresos`](010-tipo-ingresos/spec.md) ([plan](010-tipo-ingresos/plan.md), [tareas](010-tipo-ingresos/tasks.md)) | 8 | Tipo opcional de ingresos, asignación directa al disponible y migración destructiva de categoría | 002, 003, 007, 008 | Validada (T-001 a T-008 completadas) |
 | 011 | [`011-ancho-layout`](011-ancho-layout/spec.md) ([plan](011-ancho-layout/plan.md), [tareas](011-ancho-layout/tasks.md)) | 9 | Ajuste de ancho máximo, layout responsive y eliminación del scroll horizontal del balance mensual | 005, 008 | Validada (T-001 a T-004 completadas) |
+| 012 | [`012-exportacion-movimientos`](012-exportacion-movimientos/spec.md) ([plan](012-exportacion-movimientos/plan.md), [tareas](012-exportacion-movimientos/tasks.md)) | 10 | Exportación de ingresos y gastos en CSV/XLSX compatible con la importación, como backup de movimientos | 002, 003, 007 | Validada (T-001 a T-006 completadas) |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
 
