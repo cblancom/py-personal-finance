@@ -29,6 +29,7 @@ Los principios del proyecto están en [`../constitution.md`](../constitution.md)
 | 008 | [`008-balance-mensual`](008-balance-mensual/spec.md) ([plan](008-balance-mensual/plan.md), [tareas](008-balance-mensual/tasks.md)) | 6 | Balance mensual con arrastre entre meses y años, cuatro columnas, tabla anual y porcentajes mensuales | 002, 003, 004, 005 | Validada (T-001 a T-015 completadas) |
 | 009 | [`009-graficas-gastos`](009-graficas-gastos/spec.md) ([plan](009-graficas-gastos/plan.md), [tareas](009-graficas-gastos/tasks.md)) | 7 | Gráficas mensuales de gastos con barras apiladas y líneas, selector de año y tabla accesible | 003, 005, 008 | Validada (T-001 a T-007 completadas) |
 | 010 | [`010-tipo-ingresos`](010-tipo-ingresos/spec.md) ([plan](010-tipo-ingresos/plan.md), [tareas](010-tipo-ingresos/tasks.md)) | 8 | Tipo opcional de ingresos, asignación directa al disponible y migración destructiva de categoría | 002, 003, 007, 008 | Validada (T-001 a T-008 completadas) |
+| 011 | [`011-ancho-layout`](011-ancho-layout/spec.md) ([plan](011-ancho-layout/plan.md), [tareas](011-ancho-layout/tasks.md)) | 9 | Ajuste de ancho máximo, layout responsive y eliminación del scroll horizontal del balance mensual | 005, 008 | Validada (T-001 a T-004 completadas) |
 
 Estados posibles: `Pendiente`, `En clarificación`, `Aprobada`, `En implementación`, `Implementada`, `Validada`.
 
